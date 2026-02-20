@@ -1,0 +1,272 @@
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #2c3e50;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1280px; /* 横並びにするため幅を広げました */
+    margin: 0 auto;
+    text-align: center;
+    background-color: #f4f4f9;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+header {
+    margin-bottom: 20px;
+}
+
+/* --- レイアウト用ラッパー --- */
+.game-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start; /* 上揃え */
+    justify-content: center;
+}
+
+/* メインゲームエリア（左側） */
+main {
+    flex: 3; /* 幅の比率：3 */
+    display: flex;
+    flex-direction: column; /* 縦に積む（必要に応じて横並びも可） */
+    gap: 20px;
+}
+
+/* 3つのセクションを横並びにする設定（PC画面用） */
+@media (min-width: 768px) {
+    main {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    section {
+        flex: 1; /* 均等割付 */
+        min-width: 200px;
+    }
+    /* 釜エリアだけ少し広くする */
+    #cauldron-section {
+        flex: 1.2;
+    }
+}
+
+section {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* --- レシピ図鑑（右側サイドバー） --- */
+#recipe-book-section {
+    flex: 1; /* 幅の比率：1 */
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    
+    /* スクロール設定 */
+    max-height: 80vh; /* 画面の高さの80%まで */
+    overflow-y: auto; /* 溢れたらスクロール */
+    position: sticky; /* スクロールしても追従させる設定 */
+    top: 20px;
+    min-width: 250px;
+}
+
+/* --- アイテム共通スタイル --- */
+.item-container {
+    min-height: 100px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+}
+
+.item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 70px; /* 少し小さく調整 */
+    height: 80px;
+    margin: 4px;
+    padding: 4px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.2s;
+    position: relative;
+    z-index: 2;
+}
+
+.item:active { cursor: grabbing; }
+.item:hover {
+    background-color: #f0f8ff;
+    transform: scale(1.1);
+    border-color: #2196f3;
+}
+
+.icon { font-size: 2rem; line-height: 1; }
+.name { font-size: 0.7rem; margin-top: 5px; font-weight: bold; }
+
+/* --- 錬金釜エリア --- */
+#cauldron-dropzone {
+    width: 100%;
+    min-height: 180px;
+    border: 4px dashed #ccc;
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fafafa;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s;
+}
+
+#cauldron-dropzone.drag-over {
+    background-color: #e8f5e9;
+    border-color: #4caf50;
+    transform: scale(1.02);
+}
+
+#mix-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+    transition: transform 0.1s;
+    width: 100%; /* ボタンを押しやすく */
+}
+
+#mix-btn:active { transform: scale(0.95); }
+
+#message-area {
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 1.5em;
+    font-size: 1rem;
+}
+.success { color: #2e7d32; }
+.failure { color: #c62828; }
+
+/* --- レシピリスト詳細 --- */
+#recipe-list {
+    display: flex;
+    flex-direction: column; /* 縦並びリストに変更 */
+    gap: 8px;
+}
+
+.recipe-card {
+    background: #fff;
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 左右に配置 */
+}
+
+.recipe-card.unlocked {
+    background-color: #e3f2fd;
+    border: 1px solid #2196f3;
+    color: #0d47a1;
+}
+
+.recipe-card.locked {
+    background-color: #f5f5f5;
+    color: #aaa;
+    font-style: italic;
+    justify-content: center;
+}
+
+/* スマホ対応（画面が狭いときは縦並びに戻す） */
+@media (max-width: 900px) {
+    .game-wrapper {
+        flex-direction: column;
+    }
+    #recipe-book-section {
+        width: 100%;
+        max-height: 300px; /* 高さを制限 */
+        box-sizing: border-box;
+    }
+    main {
+        width: 100%;
+    }
+}
+
+/* =========================================
+   エフェクトアニメーション (変更なし)
+   ========================================= */
+@keyframes merge-spin {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(0.5) rotate(180deg); opacity: 0.8; }
+    100% { transform: scale(0) rotate(720deg); opacity: 0; }
+}
+.merging {
+    animation: merge-spin 0.8s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
+@keyframes shockwave-anim {
+    0% { transform: scale(0); opacity: 0.8; border-width: 50px; }
+    100% { transform: scale(2); opacity: 0; border-width: 0px; }
+}
+.shockwave {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 5px solid gold;
+    background: rgba(255, 255, 0, 0.5);
+    box-shadow: 0 0 20px gold;
+    animation: shockwave-anim 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 5;
+}
+
+@keyframes fly-out {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+.sparkle {
+    position: absolute;
+    top: 50%; left: 50%;
+    font-size: 1.5rem;
+    pointer-events: none;
+    animation: fly-out 1s ease-out forwards;
+    z-index: 10;
+}
+
+@keyframes pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.pop-appear {
+    animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes shake-hard {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    20% { transform: translate(-10px, 0) rotate(-5deg); }
+    40% { transform: translate(10px, 0) rotate(5deg); }
+    60% { transform: translate(-10px, 0) rotate(-5deg); }
+    80% { transform: translate(10px, 0) rotate(5deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+}
+.shake {
+    animation: shake-hard 0.4s;
+    background-color: #ffcdd2 !important;
+}

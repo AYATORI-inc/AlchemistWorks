@@ -1,0 +1,115 @@
+import { useState, useRef, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
+import type { InventoryItem } from '../types'
+import { ITEMS_DB } from '../constants/items'
+import { ItemIconSvg } from './ItemIconSvg'
+
+/** 表示用の最小アイテム（市場の購入行など） */
+export interface ItemDisplayMinimal {
+  id: string
+  name: string
+  icon: string
+  tier?: number
+  flavor?: string
+  /** AI生成SVG（日替わりアイテム用） */
+  svgPath?: string
+  svgFill?: string
+}
+
+interface ItemCardProps {
+  item: InventoryItem | ItemDisplayMinimal
+  onClick?: () => void
+  draggable?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  /** 購入価格（ポップアップに「価格: xxx G」と表示） */
+  price?: number
+  /** 売却価格（ポップアップに「売却: xxx G」と表示） */
+  value?: number
+  /** SVGアイコンを使う場合のコンポーネント（未指定なら絵文字） */
+  IconComponent?: React.ComponentType<{ itemId: string; className?: string }>
+}
+
+export function ItemCard({
+  item,
+  onClick,
+  draggable = false,
+  onDragStart,
+  price,
+  value,
+  IconComponent,
+}: ItemCardProps) {
+  const [showPopup, setShowPopup] = useState(false)
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({})
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const meta = ITEMS_DB[item.id] ?? { name: item.name, icon: item.icon, flavor: undefined }
+  const tier = item.tier ?? meta.tier ?? 0
+  const flavor = meta.flavor ?? ('flavor' in item ? item.flavor : undefined) ?? ('description' in item ? item.description : undefined)
+  const IconRender = IconComponent ?? ItemIconSvg
+  const inlineSvg = 'svgPath' in item && item.svgPath ? { path: item.svgPath, fill: item.svgFill } : undefined
+
+  useLayoutEffect(() => {
+    if (!showPopup) return
+    const el = cardRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const popupHeight = 120
+    const margin = 8
+    const showAbove = rect.top > popupHeight + margin
+    setPopupStyle({
+      position: 'fixed',
+      left: rect.left + rect.width / 2,
+      top: showAbove ? rect.top - margin : rect.bottom + margin,
+      transform: showAbove ? 'translate(-50%, -100%)' : 'translateX(-50%)',
+    })
+  }, [showPopup])
+
+  const handleMouseEnter = () => setShowPopup(true)
+  const handleMouseLeave = () => setShowPopup(false)
+
+  const popupContent = showPopup && (
+    <div
+      className="item-card-popup item-card-popup-portal"
+      style={popupStyle}
+      role="tooltip"
+    >
+      <div className="item-card-popup-name">{meta.name}</div>
+      {price != null && (
+        <div className="item-card-popup-price">ねだん: {price}G</div>
+      )}
+      {value != null && (
+        <div className="item-card-popup-value">うると: {value}G</div>
+      )}
+      {flavor && (
+        <div className="item-card-popup-flavor">{flavor}</div>
+      )}
+    </div>
+  )
+
+  return (
+    <>
+      <div
+        ref={cardRef}
+        className={`item-card tier-${tier}`}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onClick={onClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <span className="item-card-icon-wrap">
+          <IconRender itemId={item.id} className="item-icon item-icon-svg" svgPath={inlineSvg?.path} svgFill={inlineSvg?.fill} fallbackIcon={meta.icon} />
+        </span>
+        <span className="item-card-name">{meta.name}</span>
+        {price != null && (
+          <span className="item-card-price">ねだん: {price}G</span>
+        )}
+        {value != null && (
+          <span className="item-card-value">うると: {value}G</span>
+        )}
+        {tier > 0 && <span className="tier-badge">T{tier}</span>}
+      </div>
+      {showPopup && createPortal(popupContent, document.body)}
+    </>
+  )
+}

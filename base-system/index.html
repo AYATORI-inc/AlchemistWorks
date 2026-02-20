@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錬金術シミュレーター</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧪 錬金術シミュレーター</h1>
+            <p>素材を釜にドラッグ＆ドロップして「調合」しよう！</p>
+        </header>
+
+        <div class="game-wrapper">
+            
+            <main>
+                <section id="materials-section">
+                    <h2>📦 素材ボックス</h2>
+                    <div id="material-list" class="item-container">
+                        </div>
+                </section>
+
+                <section id="cauldron-section">
+                    <h2>🔥 錬金釜</h2>
+                    <div id="cauldron-dropzone">
+                        <span class="placeholder">ここに素材を入れる</span>
+                    </div>
+                    <button id="mix-btn">調合する</button>
+                    <p id="message-area"></p>
+                </section>
+
+                <section id="inventory-section">
+                    <h2>🎒 アイテム棚</h2>
+                    <div id="inventory-list" class="item-container">
+                        </div>
+                </section>
+            </main>
+
+            <aside id="recipe-book-section">
+                <h2>📖 レシピ図鑑</h2>
+                <div id="recipe-list">
+                    </div>
+            </aside>
+
+        </div>
+        </div>
+    <script src="main.js"></script>
+</body>
+</html>
