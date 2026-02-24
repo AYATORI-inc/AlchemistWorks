@@ -45,7 +45,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       <div className="recipe-meta">
         {discoveredAt && <span className="recipe-date">発見: {discoveredAt}</span>}
         {recipe.useCount != null && recipe.useCount > 0 && (
-          <span className="recipe-use-count">使用回数: {recipe.useCount}</span>
+          <span className="recipe-use-count">累計制作数: {recipe.useCount}個</span>
         )}
       </div>
     </div>

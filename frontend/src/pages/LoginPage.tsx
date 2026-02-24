@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext'
 import { defaultSaveData } from '../contexts/GameContext'
 import type { SaveData } from '../types'
 import { api } from '../api/client'
+import { resolveItemCategory } from '../constants/items'
 
 const hasApi = () => !!import.meta.env.VITE_GAS_URL
 
@@ -53,18 +54,37 @@ export function LoginPage() {
           const res = await api.auth.login(userName.trim(), workshopName.trim())
           const saveRes = await api.save.get(res.userId)
           const data = saveRes.data as Record<string, unknown>
+          const loadedInventory = ((data.inventory as typeof defaultSaveData.inventory) ?? []).map((item) => ({
+            ...item,
+            category: resolveItemCategory({
+              id: item.id,
+              name: item.name,
+              description: item.description,
+              category: item.category,
+            }),
+          }))
+          const loadedRecipes = ((data.recipes as typeof defaultSaveData.recipes) ?? []).map((recipe) => ({
+            ...recipe,
+            resultCategory: recipe.resultCategory ?? resolveItemCategory({
+              id: recipe.result,
+              name: recipe.resultName,
+              description: recipe.resultFlavor,
+              ingredientIds: recipe.ingredients,
+            }),
+          }))
           const saveData = {
             ...defaultSaveData,
             userId: res.userId,
             userName: (data.userName as string) || userName.trim(),
             workshopName: (data.workshopName as string) || workshopName.trim(),
             g: (data.g as number) ?? res.g,
-            inventory: (data.inventory as typeof defaultSaveData.inventory) ?? [],
-            recipes: (data.recipes as typeof defaultSaveData.recipes) ?? [],
+            inventory: loadedInventory,
+            recipes: loadedRecipes,
             achievements: (data.achievements as typeof defaultSaveData.achievements) ?? [],
             rank: (data.rank as number) ?? 1,
             lastLoginDate: (data.lastLoginDate as string) ?? defaultSaveData.lastLoginDate,
             alchemyCount: (data.alchemyCount as number) ?? 0,
+            dailySalesLedger: (data.dailySalesLedger as SaveData['dailySalesLedger']) ?? defaultSaveData.dailySalesLedger,
             discoveredSvgIcons: (data.discoveredSvgIcons as SaveData['discoveredSvgIcons']) ?? {},
           }
           setSaveData(saveData)

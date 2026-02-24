@@ -8,17 +8,18 @@ export interface Tip {
 export const TIPS: Tip[] = [
   // 合成ヒント
   { category: 'synthesis', text: '作ったものも釜に入れると、もっとすごいものが作れるよ' },
-  { category: 'synthesis', text: '同じようなもの同士を合わせると、新しい発見があるかも' },
-  { category: 'synthesis', text: '数字が大きいものほど、とくべつなものができやすくなる' },
+  { category: 'synthesis', text: '生産個数を増やすと、同じレシピをまとめて作れるよ' },
+  { category: 'synthesis', text: '作った数はレシピブックに累計で記録されるよ' },
   // 操作マニュアル
   { category: 'operation', text: 'ひっぱって釜に落とすと入るよ' },
-  { category: 'operation', text: '作ったものは市場でお金にできる' },
+  { category: 'operation', text: '作ったものは「陳列」ボタンで販売棚へ移せる' },
   { category: 'operation', text: '基本素材はいつでも工房にあるよ。買わなくて大丈夫' },
   // 調合ペース
   { category: 'pace', text: 'はやい＝びっくりする結果、ゆっくり＝きれいな結果。やってみよう' },
   { category: 'pace', text: 'ゆっくりやると、いいものができやすいよ' },
   // システムTips
-  { category: 'system', text: '依頼をとおすとお金と実績がもらえる' },
+  { category: 'system', text: '店をあけると客が来る。閉めると新しい客は来ない' },
+  { category: 'system', text: 'ログアウト前の出納帳で「誰が何をいくつ買ったか」を確認できる' },
   { category: 'system', text: '日替わりの品は毎日変わるよ' },
   { category: 'system', text: '日が変わるとお金が少しもらえる' },
   // 世界観

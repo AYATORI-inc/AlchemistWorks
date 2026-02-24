@@ -7,7 +7,7 @@
 
 // 既知IDのフォールバック（フロントから name が渡されない場合用）
 var _INGREDIENT_NAMES = {
-  herb: '薬草', water: '水', slime: 'スライム', fire_stone: '火の石',
+  herb: '薬草', water: '水', slime: 'なぞの肉', fire_stone: '火の石',
   magic_sand: '魔法の砂', feather: '羽根', iron_ore: '鉄鉱石',
   dark_dust: '闇の粉', elec_stone: '電気石',
   potion: '回復薬', poison: '毒薬', bomb: '爆弾', steam: '蒸気',
@@ -20,6 +20,72 @@ var _INGREDIENT_NAMES = {
 };
 
 var _PACE_NAMES = { fast: '素早く', normal: '普通', slow: 'ゆっくり' };
+var _ITEM_CATEGORIES = ['food', 'weapon', 'medicine', 'gem'];
+var _INGREDIENT_CATEGORIES = {
+  herb: 'medicine', water: 'food', slime: 'food', fire_stone: 'gem',
+  magic_sand: 'medicine', feather: 'weapon', iron_ore: 'weapon',
+  dark_dust: 'gem', elec_stone: 'weapon',
+  potion: 'medicine', poison: 'medicine', bomb: 'weapon', steam: 'medicine',
+  glass: 'gem', jewel: 'gem', holy_water: 'medicine', wing: 'gem',
+  ingot: 'weapon', thunder: 'weapon', dark_matter: 'medicine',
+  high_potion: 'medicine', big_bomb: 'weapon', elixir: 'medicine',
+  hourglass: 'gem', sword: 'weapon', angel: 'gem', demon: 'weapon',
+  robot: 'weapon', light_bulb: 'gem', philosopher_stone: 'gem',
+  hero: 'weapon', maou: 'weapon'
+};
+var _CATEGORY_KEYWORDS = {
+  food: ['food', 'meal', 'bread', 'cook', 'drink', 'soup', 'fruit', '食', '料理', '飲', 'パン', '菓子', 'ごはん', 'スープ', '果実'],
+  weapon: ['weapon', 'blade', 'sword', 'spear', 'bow', 'shield', 'bomb', 'thunder', '剣', '槍', '弓', '盾', '武器', '装備', '爆', '雷', '刃'],
+  medicine: ['medicine', 'potion', 'elixir', 'heal', 'cure', 'toxin', 'poison', '薬', '回復', '治療', '毒', '秘薬', '聖水'],
+  gem: ['gem', 'jewel', 'crystal', 'stone', 'glass', 'ore', '宝', '石', '結晶', '鉱', '宝石', 'ガラス']
+};
+
+function _normalizeCategory(raw, fallback) {
+  var category = (raw || '').toString();
+  return _ITEM_CATEGORIES.indexOf(category) >= 0 ? category : fallback;
+}
+
+function _inferCategoryFromText(text) {
+  var t = (text || '').toString().toLowerCase();
+  for (var i = 0; i < _ITEM_CATEGORIES.length; i++) {
+    var category = _ITEM_CATEGORIES[i];
+    var words = _CATEGORY_KEYWORDS[category] || [];
+    for (var j = 0; j < words.length; j++) {
+      if (t.indexOf(words[j].toLowerCase()) >= 0) return category;
+    }
+  }
+  return null;
+}
+
+function _inferCategoryFromIngredient(ingredient) {
+  var id = (ingredient && ingredient.id ? ingredient.id : '').toString();
+  if (_INGREDIENT_CATEGORIES[id]) return _INGREDIENT_CATEGORIES[id];
+  var byName = _inferCategoryFromText(ingredient && ingredient.name ? ingredient.name : '');
+  if (byName) return byName;
+  var byId = _inferCategoryFromText(id.replace(/[_-]/g, ' '));
+  if (byId) return byId;
+  return 'medicine';
+}
+
+function _inferCategoryFromIngredients(ia, ib) {
+  var score = { food: 0, weapon: 0, medicine: 0, gem: 0 };
+  var categories = [
+    _inferCategoryFromIngredient(ia),
+    _inferCategoryFromIngredient(ib)
+  ];
+  for (var i = 0; i < categories.length; i++) {
+    score[categories[i]] += 1;
+  }
+  var best = 'medicine';
+  var bestScore = -1;
+  for (var key in score) {
+    if (score[key] > bestScore) {
+      best = key;
+      bestScore = score[key];
+    }
+  }
+  return best;
+}
 
 function _resolveIngredient(item) {
   if (item && typeof item === 'object' && item.name) {
@@ -63,6 +129,7 @@ function handleAlchemy(e) {
     }
     if (matched) {
       var resultId = (matched.result || '').toString().replace(/[^a-zA-Z0-9_]/g, '_');
+      var fallbackCategory = _inferCategoryFromIngredients(ia, ib);
       var resultItem = {
         id: resultId,
         name: (matched.resultName || resultId).slice(0, 20),
@@ -71,6 +138,7 @@ function handleAlchemy(e) {
         description: (matched.resultFlavor || '').slice(0, 100),
         value: Math.min(15000, Math.max(100, typeof matched.resultValue === 'number' ? matched.resultValue : 1000)),
         tier: Math.min(3, Math.max(0, typeof matched.resultTier === 'number' ? matched.resultTier : 1)),
+        category: _normalizeCategory(matched.resultCategory, fallbackCategory),
         isNewRecipe: false
       };
       return {
@@ -98,8 +166,9 @@ function handleAlchemy(e) {
     '※スピードが「ゆっくり」ほど高品質・高ティアの結果にし、「素早く」ほど簡単な結果にしてください。\n' +
     'ファンタジー錬金術の世界観で、素材の組み合わせから自然な結果を考えてください。\n' +
     '結果アイテムにはiconに絵文字1つを付けてください（SVGやpathは不要。後で別途アイコン生成します）。\n' +
+    'category は food|weapon|medicine|gem のいずれか1つを必ず返してください。\n' +
     '必ず以下のJSON形式のみで返してください（他テキストなし）:\n' +
-    '{"result":{"id":"スネーク_caseの英数字ID","name":"日本語名","icon":"絵文字1つ","quality":"crude|normal|fine|legendary","description":"一言説明","value":500,"tier":1,"isNewRecipe":true},"byproduct":null}\n' +
+    '{"result":{"id":"スネーク_caseの英数字ID","name":"日本語名","icon":"絵文字1つ","quality":"crude|normal|fine|legendary","description":"一言説明","value":500,"tier":1,"category":"food|weapon|medicine|gem","isNewRecipe":true},"byproduct":null}\n' +
     'valueは売却価格(G)、100〜15000。tierは0=素材,1=初級,2=中級,3=高級。';
 
   try {
@@ -127,6 +196,7 @@ function handleAlchemy(e) {
     if (!r) return { error: 'AIの応答形式が不正です' };
 
     var itemId = (r.id || 'ai_' + Date.now()).replace(/[^a-zA-Z0-9_]/g, '_');
+    var fallbackCategory = _inferCategoryFromIngredients(ia, ib);
     var resultItem = {
       id: itemId,
       name: (r.name || '謎の調合物').slice(0, 20),
@@ -135,6 +205,7 @@ function handleAlchemy(e) {
       description: (r.description || '').slice(0, 100),
       value: Math.min(15000, Math.max(100, typeof r.value === 'number' ? r.value : 1000)),
       tier: Math.min(3, Math.max(0, typeof r.tier === 'number' ? r.tier : 1)),
+      category: _normalizeCategory(r.category, fallbackCategory),
       isNewRecipe: !!r.isNewRecipe
     };
 

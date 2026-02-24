@@ -17,8 +17,8 @@ function handleAuthLogin(e) {
   var userId = _toUserId(userName, workshopName);
   var folderId = ''; // TODO: Drive.createFolder(userId, userName, workshopName);
 
-  // 既存セーブがあれば g は save.get で上書きされる。新規の場合は初期研究費
-  var g = 10000;
+  // 既存セーブがあれば g は save.get で上書きされる。新規は 0G 開始
+  var g = 0;
 
   return {
     userId: userId,

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import type { SaveData, InventoryItem, Mission, MarketItem, Recipe } from '../types'
+import type { SaveData, InventoryItem, Mission, MarketItem, Recipe, SalesLogEntry, ItemCategory } from '../types'
 
 interface GameState {
   saveData: SaveData | null
@@ -30,19 +30,23 @@ interface GameContextValue extends GameState {
   spendG: (amount: number) => boolean
   addDiscoveredSvgIcon: (itemId: string, path: string, fill?: string) => void
   addDiscoveredItemName: (itemId: string, name: string) => void
+  addSalesLog: (payload: { category: ItemCategory; amountG: number; note: string }) => void
 }
+
+const todayStr = () => new Date().toISOString().slice(0, 10)
 
 const defaultSaveData: SaveData = {
   userId: '',
   userName: '',
   workshopName: '',
-  g: 10000,
+  g: 0,
   inventory: [],
   recipes: [],
   achievements: [],
   rank: 1,
-  lastLoginDate: new Date().toISOString().slice(0, 10),
+  lastLoginDate: todayStr(),
   alchemyCount: 0,
+  dailySalesLedger: { date: todayStr(), totalG: 0, entries: [] },
   discoveredSvgIcons: {},
   discoveredItemNames: {},
 }
@@ -98,11 +102,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const addRecipe = useCallback((recipe: Recipe) => {
     setSaveData((prev) => {
       if (!prev) return prev
-      const exists = prev.recipes.some((r) => r.id === recipe.id)
-      if (exists) return prev
+      const existing = prev.recipes.find((r) => r.id === recipe.id)
+      if (existing) {
+        const nextRecipes = prev.recipes.map((r) => {
+          if (r.id !== recipe.id) return r
+          return {
+            ...r,
+            ...recipe,
+            discoveredAt: r.discoveredAt ?? recipe.discoveredAt,
+            useCount: (r.useCount ?? 0) + (recipe.useCount ?? 0),
+          }
+        })
+        return {
+          ...prev,
+          recipes: nextRecipes,
+        }
+      }
       return {
         ...prev,
-        recipes: [...prev.recipes, recipe],
+        recipes: [
+          ...prev.recipes,
+          {
+            ...recipe,
+            useCount: recipe.useCount ?? 0,
+          },
+        ],
       }
     })
   }, [])
@@ -148,6 +172,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return saveData !== null && (saveData?.g ?? 0) >= amount
   }, [saveData])
 
+  const addSalesLog = useCallback((payload: { category: ItemCategory; amountG: number; note: string }) => {
+    setSaveData((prev) => {
+      if (!prev) return prev
+      const today = todayStr()
+      const current = prev.dailySalesLedger && prev.dailySalesLedger.date === today
+        ? prev.dailySalesLedger
+        : { date: today, totalG: 0, entries: [] as SalesLogEntry[] }
+      const entry: SalesLogEntry = {
+        id: `sale_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        soldAt: new Date().toISOString(),
+        category: payload.category,
+        amountG: payload.amountG,
+        note: payload.note,
+      }
+      return {
+        ...prev,
+        dailySalesLedger: {
+          date: today,
+          totalG: current.totalG + payload.amountG,
+          entries: [entry, ...current.entries].slice(0, 200),
+        },
+      }
+    })
+  }, [])
+
   const value: GameContextValue = {
     saveData,
     missions,
@@ -171,6 +220,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     spendG,
     addDiscoveredSvgIcon,
     addDiscoveredItemName,
+    addSalesLog,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

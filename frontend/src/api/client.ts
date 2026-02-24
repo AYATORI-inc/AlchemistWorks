@@ -64,7 +64,7 @@ export const api = {
       userId: string,
       ingredients: [string, string] | [{ id: string; name: string }, { id: string; name: string }],
       pace: string,
-      knownRecipes?: Array<{ id: string; ingredients: [string, string]; result: string; pace?: string; resultName?: string; resultIcon?: string; resultFlavor?: string; resultValue?: number; resultTier?: number; resultQuality?: string }>
+      knownRecipes?: Array<{ id: string; ingredients: [string, string]; result: string; pace?: string; resultName?: string; resultIcon?: string; resultFlavor?: string; resultValue?: number; resultTier?: number; resultQuality?: string; resultCategory?: 'food' | 'weapon' | 'medicine' | 'gem' }>
     ) =>
       fetchApi<object>('alchemy', {
         method: 'POST',

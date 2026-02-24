@@ -27,9 +27,12 @@ const SVG_ICONS: Record<string, ReactNode> = {
   ),
   slime: (
     <g>
-      <ellipse cx="12" cy="14" rx="9" ry="7" fill="#42a5f5" />
-      <ellipse cx="10" cy="12" rx="3" ry="2" fill="#bbdefb" opacity="0.8" />
-      <path fill="#1e88e5" d="M6 16c0 2 2 3 6 3s6-1 6-3c0-1-1-2-3-2H9c-2 0-3 1-3 2z" />
+      <path fill="#8d3b2f" d="M4 14c0-4 4-8 9-8 4 0 7 2 7 6 0 5-4 8-9 8-4 0-7-2-7-6z" />
+      <path fill="#b84c3e" d="M6 14c0-3 3-6 7-6 3 0 5 2 5 4 0 4-3 6-7 6-3 0-5-1-5-4z" />
+      <ellipse cx="10" cy="12" rx="1.8" ry="1.2" fill="#d97a6d" opacity="0.7" />
+      <ellipse cx="14.5" cy="15.5" rx="2.2" ry="1.4" fill="#d97a6d" opacity="0.65" />
+      <circle cx="18" cy="9" r="2" fill="#f5e7c8" />
+      <circle cx="18" cy="9" r="1.1" fill="#fff6df" />
     </g>
   ),
   fire_stone: (

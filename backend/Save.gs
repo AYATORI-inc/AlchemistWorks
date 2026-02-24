@@ -18,13 +18,18 @@ function handleSaveGet(e) {
     userId: userId,
     userName: '',
     workshopName: '',
-    g: 10000,
+    g: 0,
     inventory: [],
     recipes: [],
     achievements: [],
     rank: 1,
     lastLoginDate: new Date().toISOString().slice(0, 10),
-    alchemyCount: 0
+    alchemyCount: 0,
+    dailySalesLedger: {
+      date: new Date().toISOString().slice(0, 10),
+      totalG: 0,
+      entries: []
+    }
   };
 
   // Drive 使用時: マイドライブ or 指定フォルダから読み込み

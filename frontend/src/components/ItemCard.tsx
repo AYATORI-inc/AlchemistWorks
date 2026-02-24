@@ -1,17 +1,16 @@
 import { useState, useRef, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { InventoryItem } from '../types'
-import { ITEMS_DB } from '../constants/items'
+import type { InventoryItem, ItemCategory } from '../types'
+import { ITEMS_DB, getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
 import { ItemIconSvg } from './ItemIconSvg'
 
-/** 表示用の最小アイテム（市場の購入行など） */
 export interface ItemDisplayMinimal {
   id: string
   name: string
   icon: string
   tier?: number
   flavor?: string
-  /** AI生成SVG（日替わりアイテム用） */
+  category?: ItemCategory
   svgPath?: string
   svgFill?: string
 }
@@ -21,11 +20,8 @@ interface ItemCardProps {
   onClick?: () => void
   draggable?: boolean
   onDragStart?: (e: React.DragEvent) => void
-  /** 購入価格（ポップアップに「価格: xxx G」と表示） */
   price?: number
-  /** 売却価格（ポップアップに「売却: xxx G」と表示） */
   value?: number
-  /** SVGアイコンを使う場合のコンポーネント（未指定なら絵文字） */
   IconComponent?: React.ComponentType<{ itemId: string; className?: string }>
 }
 
@@ -44,6 +40,7 @@ export function ItemCard({
 
   const meta = ITEMS_DB[item.id] ?? { name: item.name, icon: item.icon, flavor: undefined }
   const tier = item.tier ?? meta.tier ?? 0
+  const category = item.category ?? meta.category ?? getItemCategory(item.id)
   const flavor = meta.flavor ?? ('flavor' in item ? item.flavor : undefined) ?? ('description' in item ? item.description : undefined)
   const IconRender = IconComponent ?? ItemIconSvg
   const inlineSvg = 'svgPath' in item && item.svgPath ? { path: item.svgPath, fill: item.svgFill } : undefined
@@ -74,11 +71,12 @@ export function ItemCard({
       role="tooltip"
     >
       <div className="item-card-popup-name">{meta.name}</div>
+      <div className="item-card-popup-value">カテゴリ: {ITEM_CATEGORY_LABELS[category]}</div>
       {price != null && (
         <div className="item-card-popup-price">ねだん: {price}G</div>
       )}
       {value != null && (
-        <div className="item-card-popup-value">うると: {value}G</div>
+        <div className="item-card-popup-value">{value}G</div>
       )}
       {flavor && (
         <div className="item-card-popup-flavor">{flavor}</div>
@@ -90,7 +88,7 @@ export function ItemCard({
     <>
       <div
         ref={cardRef}
-        className={`item-card tier-${tier}`}
+        className={`item-card tier-${tier} category-${category}`}
         draggable={draggable}
         onDragStart={onDragStart}
         onClick={onClick}
@@ -105,7 +103,7 @@ export function ItemCard({
           <span className="item-card-price">ねだん: {price}G</span>
         )}
         {value != null && (
-          <span className="item-card-value">うると: {value}G</span>
+          <span className="item-card-value">{value}G</span>
         )}
         {tier > 0 && <span className="tier-badge">T{tier}</span>}
       </div>
