@@ -95,4 +95,23 @@ export const api = {
     get: (userId: string) =>
       fetchApi<{ recipes: object[] }>(`recipes?userId=${userId}`),
   },
+  shop: {
+    comment: (payload: {
+      userId?: string
+      workshopName?: string
+      customerName: string
+      categoryName: string
+      eventType: 'sale' | 'no-sale'
+      purchasedItemText?: string
+      quantity?: number
+      customerReason?: string
+      customerTemperament?: string
+      totalPriceG?: number
+      isWholesale?: boolean
+    }) =>
+      fetchApi<{ ok: boolean; source?: 'ai' | 'fallback'; comment: string }>('shop/comment', {
+        method: 'POST',
+        body: { path: 'shop/comment', ...payload },
+      }),
+  },
 }

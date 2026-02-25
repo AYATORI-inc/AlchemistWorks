@@ -2,25 +2,23 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useGame } from '../contexts/GameContext'
 import { ITEM_CATEGORY_LABELS } from '../constants/items'
-
-const RANK_NAMES: Record<number, string> = {
-  1: 'みならい錬金術師',
-  2: '見習い錬金術師',
-  3: '錬金術師',
-  4: '熟練錬金術師',
-  5: '名人錬金術師',
-  6: '国一番の錬金術師',
-}
+import { RANK_TITLES } from '../constants/achievements'
+import { formatG, formatNumber } from '../utils/format'
 
 export function Header() {
   const navigate = useNavigate()
-  const { saveData, setRecipeModalOpen, setSaveData } = useGame()
+  const { saveData, setRecipeModalOpen, setAchievementModalOpen, setSaveData } = useGame()
   const rank = saveData?.rank ?? 1
   const [showLedgerModal, setShowLedgerModal] = useState(false)
 
   const handleRecipeClick = (e: React.MouseEvent) => {
     e.preventDefault()
     setRecipeModalOpen(true)
+  }
+
+  const handleAchievementClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setAchievementModalOpen(true)
   }
 
   const handleConfirmLogout = () => {
@@ -37,11 +35,11 @@ export function Header() {
     <>
       <header className="header">
         <Link to="/game" className="logo">
-          🧪 錬金術シミュレータ
+          🧪 魔法工房　ヒミツのお店
         </Link>
         <nav className="header-nav">
           <Link to="/game" onClick={handleRecipeClick}>レシピブック</Link>
-          <Link to="/achievements">実績</Link>
+          <Link to="/achievements" onClick={handleAchievementClick}>実績</Link>
           <button type="button" className="header-nav-btn" onClick={handleLogout}>
             ログアウト
           </button>
@@ -49,8 +47,8 @@ export function Header() {
         <div className="header-right">
           {saveData && (
             <>
-              <span className="g-display">G: {saveData.g}</span>
-              <span className="rank-badge">{RANK_NAMES[rank]}</span>
+              <span className="g-display">G: {formatNumber(saveData.g)}</span>
+              <span className="rank-badge">{RANK_TITLES[rank] ?? RANK_TITLES[1]}</span>
               {saveData.workshopName && (
                 <span className="workshop-name">{saveData.workshopName}</span>
               )}
@@ -66,7 +64,7 @@ export function Header() {
               <h3>今日の売り上げ</h3>
               <span className="ledger-date">{ledger?.date ?? new Date().toISOString().slice(0, 10)}</span>
             </div>
-            <div className="ledger-total">合計: {ledger?.totalG ?? 0}G</div>
+            <div className="ledger-total">合計: {formatG(ledger?.totalG ?? 0)}</div>
             <div className="ledger-lines">
               {entries.length === 0 ? (
                 <p className="ledger-empty">売上はまだありません。</p>
@@ -76,7 +74,7 @@ export function Header() {
                     <span>{new Date(entry.soldAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
                     <span>{ITEM_CATEGORY_LABELS[entry.category]}</span>
                     <span>{entry.note}</span>
-                    <strong>+{entry.amountG}G</strong>
+                    <strong>+{formatG(entry.amountG)}</strong>
                   </div>
                 ))
               )}

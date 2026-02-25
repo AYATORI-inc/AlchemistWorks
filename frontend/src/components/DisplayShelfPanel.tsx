@@ -6,7 +6,11 @@ import { getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
 
 const CATEGORY_ORDER: ItemCategory[] = ['food', 'weapon', 'medicine', 'gem']
 
-export function DisplayShelfPanel() {
+interface DisplayShelfPanelProps {
+  embedded?: boolean
+}
+
+export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps = {}) {
   const { saveData, setSaveData } = useGame()
   const displayedItems = (saveData?.inventory ?? []).filter((item) => item.isDisplayed)
   const groupedDisplayedItems = useMemo(() => {
@@ -55,35 +59,51 @@ export function DisplayShelfPanel() {
   }
 
   return (
-    <section className="display-shelf-panel sidebar-section">
-      <h2>🛍️ 商品だな</h2>
+    <section className={`display-shelf-panel sidebar-section ${embedded ? 'embedded-shop-block' : ''}`.trim()}>
+      <div className="display-shelf-signboard" aria-hidden>
+        <span className="display-shelf-signboard-icon">🛍️</span>
+        <span className="display-shelf-signboard-text">商品だな</span>
+        <span className="display-shelf-signboard-pin left">●</span>
+        <span className="display-shelf-signboard-pin right">●</span>
+      </div>
       <p className="market-hint">お客さんには欲しいものがあって、それがないと帰ってしまいます。</p>
 
-      <div className="shelf-category-stats">
-        {CATEGORY_ORDER.map((category) => (
-          <span key={category} className={`category-chip category-${category}`}>
-            {ITEM_CATEGORY_LABELS[category]}: {counts[category]}個
-          </span>
-        ))}
-      </div>
+      <div className="display-shelf-rack">
+        <div className="display-shelf-rack-post left" aria-hidden />
+        <div className="display-shelf-rack-post right" aria-hidden />
+        <div className="display-shelf-rack-trim top" aria-hidden />
+        <div className="display-shelf-rack-trim middle" aria-hidden />
+        <div className="display-shelf-rack-trim bottom" aria-hidden />
 
-      {displayedItems.length === 0 ? (
-        <p className="empty-message">商品だなは空です。作ったものを並べてみましょう。</p>
-      ) : (
-        <div className="market-sell-grid">
-          {groupedDisplayedItems.map((group) => (
-            <div key={group.key} className="market-sell-item">
-              <div className="stacked-item-card">
-                <ItemCard item={group.representative} value={group.representative.value} />
-                {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
-              </div>
-              <button type="button" className="market-sell-btn" onClick={() => returnToInventory(group.firstInstanceId)}>
-                もどす
-              </button>
+        <div className="display-shelf-rack-content">
+          <div className="shelf-category-stats">
+            {CATEGORY_ORDER.map((category) => (
+              <span key={category} className={`category-chip category-${category}`}>
+                {ITEM_CATEGORY_LABELS[category]}: {counts[category]}個
+              </span>
+            ))}
+          </div>
+
+          {displayedItems.length === 0 ? (
+            <p className="empty-message display-shelf-empty">商品だなは空です。作ったものを並べてみましょう。</p>
+          ) : (
+            <div className="market-sell-grid display-shelf-grid">
+              {groupedDisplayedItems.map((group) => (
+                <div key={group.key} className="market-sell-item display-shelf-slot">
+                  <div className="display-shelf-price-strip" aria-hidden />
+                  <div className="stacked-item-card">
+                    <ItemCard item={group.representative} value={group.representative.value} />
+                    {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
+                  </div>
+                  <button type="button" className="market-sell-btn" onClick={() => returnToInventory(group.firstInstanceId)}>
+                    もどす
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </section>
   )
 }

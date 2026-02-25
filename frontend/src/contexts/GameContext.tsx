@@ -1,5 +1,13 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import type { SaveData, InventoryItem, Mission, MarketItem, Recipe, SalesLogEntry, ItemCategory } from '../types'
+import { formatTierTextForUi, RANK_TITLES, syncAchievementsAndRank } from '../constants/achievements'
+
+export interface AchievementToast {
+  id: string
+  kind: 'achievement' | 'rank'
+  title: string
+  message: string
+}
 
 interface GameState {
   saveData: SaveData | null
@@ -10,6 +18,8 @@ interface GameState {
   isDeliveringMission: boolean
   recipeModalOpen: boolean
   missionModalOpen: boolean
+  achievementModalOpen: boolean
+  achievementToasts: AchievementToast[]
 }
 
 interface GameContextValue extends GameState {
@@ -23,6 +33,8 @@ interface GameContextValue extends GameState {
   setDeliveringMission: (delivering: boolean) => void
   setRecipeModalOpen: (open: boolean) => void
   setMissionModalOpen: (open: boolean) => void
+  setAchievementModalOpen: (open: boolean) => void
+  dismissAchievementToast: (id: string) => void
   addToInventory: (item: InventoryItem) => void
   removeFromInventory: (instanceId: string) => void
   addRecipe: (recipe: Recipe) => void
@@ -31,6 +43,7 @@ interface GameContextValue extends GameState {
   addDiscoveredSvgIcon: (itemId: string, path: string, fill?: string) => void
   addDiscoveredItemName: (itemId: string, name: string) => void
   addSalesLog: (payload: { category: ItemCategory; amountG: number; note: string }) => void
+  addMissionCompletion: () => void
 }
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
@@ -40,12 +53,15 @@ const defaultSaveData: SaveData = {
   userName: '',
   workshopName: '',
   g: 0,
+  totalSalesG: 0,
+  totalSalesCount: 0,
   inventory: [],
   recipes: [],
   achievements: [],
   rank: 1,
   lastLoginDate: todayStr(),
   alchemyCount: 0,
+  missionCompletedCount: 0,
   dailySalesLedger: { date: todayStr(), totalG: 0, entries: [] },
   discoveredSvgIcons: {},
   discoveredItemNames: {},
@@ -60,7 +76,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [marketData, setMarketData] = useState<{ basic: MarketItem[]; daily: MarketItem[]; dailySource?: 'ai' | 'fallback' } | null>(null)
   const [recipeModalOpen, setRecipeModalOpen] = useState(false)
   const [missionModalOpen, setMissionModalOpen] = useState(false)
+  const [achievementModalOpen, setAchievementModalOpen] = useState(false)
+  const [achievementToasts, setAchievementToasts] = useState<AchievementToast[]>([])
   const [isDeliveringMission, setIsDeliveringMission] = useState(false)
+  const achievementSyncInitializedUserIdsRef = useRef<Set<string>>(new Set())
 
   const setMissions = useCallback(
     (arg: Mission[] | null | ((prev: Mission[] | null) => [Mission[] | null, 'ai' | 'fallback' | null]), source?: 'ai' | 'fallback') => {
@@ -78,6 +97,45 @@ export function GameProvider({ children }: { children: ReactNode }) {
     []
   )
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!saveData) return
+    const userId = saveData.userId || '__anonymous__'
+    const isFirstAchievementSyncForUser = !achievementSyncInitializedUserIdsRef.current.has(userId)
+    if (isFirstAchievementSyncForUser) {
+      achievementSyncInitializedUserIdsRef.current.add(userId)
+    }
+
+    const synced = syncAchievementsAndRank(saveData)
+    if (synced === saveData) return
+
+    const prevUnlockedIds = new Set((saveData.achievements ?? []).filter((a) => a.unlocked).map((a) => a.id))
+    const newlyUnlocked = (synced.achievements ?? []).filter((a) => a.unlocked && !prevUnlockedIds.has(a.id))
+    const prevRank = saveData.rank ?? 1
+    const nextRank = synced.rank ?? 1
+
+    if (!isFirstAchievementSyncForUser && (newlyUnlocked.length > 0 || nextRank > prevRank)) {
+      const nextToasts: AchievementToast[] = [
+        ...newlyUnlocked.map((achievement) => ({
+          id: `achv-${achievement.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          kind: 'achievement' as const,
+          title: '実績を解放！',
+          message: formatTierTextForUi(achievement.name),
+        })),
+        ...(nextRank > prevRank
+          ? [{
+              id: `rank-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              kind: 'rank' as const,
+              title: '称号アップ！',
+              message: RANK_TITLES[nextRank] ?? `ランク ${nextRank}`,
+            }]
+          : []),
+      ]
+      setAchievementToasts((prev) => [...prev, ...nextToasts].slice(-6))
+    }
+
+    setSaveData(synced)
+  }, [saveData])
 
   const addToInventory = useCallback((item: InventoryItem) => {
     setSaveData((prev) => {
@@ -115,11 +173,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         })
         return {
           ...prev,
+          alchemyCount: (prev.alchemyCount ?? 0) + Math.max(1, recipe.useCount ?? 1),
           recipes: nextRecipes,
         }
       }
       return {
         ...prev,
+        alchemyCount: (prev.alchemyCount ?? 0) + Math.max(1, recipe.useCount ?? 1),
         recipes: [
           ...prev.recipes,
           {
@@ -188,6 +248,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
       return {
         ...prev,
+        totalSalesG: (prev.totalSalesG ?? 0) + payload.amountG,
+        totalSalesCount: (prev.totalSalesCount ?? 0) + 1,
         dailySalesLedger: {
           date: today,
           totalG: current.totalG + payload.amountG,
@@ -195,6 +257,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
         },
       }
     })
+  }, [])
+
+  const addMissionCompletion = useCallback(() => {
+    setSaveData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        missionCompletedCount: (prev.missionCompletedCount ?? 0) + 1,
+      }
+    })
+  }, [])
+
+  const dismissAchievementToast = useCallback((id: string) => {
+    setAchievementToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
   const value: GameContextValue = {
@@ -206,6 +282,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     isDeliveringMission,
     recipeModalOpen,
     missionModalOpen,
+    achievementModalOpen,
+    achievementToasts,
     setSaveData,
     setMissions,
     setMarketData,
@@ -213,6 +291,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setDeliveringMission: setIsDeliveringMission,
     setRecipeModalOpen,
     setMissionModalOpen,
+    setAchievementModalOpen,
+    dismissAchievementToast,
     addToInventory,
     removeFromInventory,
     addRecipe,
@@ -221,6 +301,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     addDiscoveredSvgIcon,
     addDiscoveredItemName,
     addSalesLog,
+    addMissionCompletion,
   }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

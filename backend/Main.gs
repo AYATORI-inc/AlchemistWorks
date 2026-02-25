@@ -48,6 +48,9 @@ function handleRequest(e, method) {
       case 'missions':
         result = handleMissions(e, method, path);
         break;
+      case 'shop':
+        result = handleShop(e, method, path);
+        break;
       case 'recipes':
         result = method === 'GET' ? handleRecipesGet(e) : { error: 'Method not allowed' };
         break;

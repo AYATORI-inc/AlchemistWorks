@@ -1,10 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { useGame } from '../contexts/GameContext'
 import { ItemCard } from './ItemCard'
 import { BASIC_MATERIALS, ITEMS_DB, getSellValue, getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
 
-export function InventoryPanel() {
+interface InventoryPanelProps {
+  mobileCauldron?: ReactNode
+}
+
+export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
   const { saveData, setSaveData } = useGame()
+  const lastTapRef = useRef<{ key: string; time: number } | null>(null)
   const inventory = saveData?.inventory ?? []
   const generatedItems = inventory.filter((i) => {
     const tier = i.tier ?? ITEMS_DB[i.id]?.tier ?? 0
@@ -55,13 +60,33 @@ export function InventoryPanel() {
     })
   }
 
+  const dispatchQuickAddToCauldron = (payload: { instanceId?: string; basicMaterialId?: string }) => {
+    window.dispatchEvent(new CustomEvent('alchemy:add-to-cauldron', { detail: payload }))
+  }
+
+  const handleDoubleTap = (
+    e: React.TouchEvent,
+    key: string,
+    action: () => void
+  ) => {
+    const now = Date.now()
+    const prev = lastTapRef.current
+    if (prev && prev.key === key && now - prev.time < 320) {
+      e.preventDefault()
+      lastTapRef.current = null
+      action()
+      return
+    }
+    lastTapRef.current = { key, time: now }
+  }
+
   return (
     <section className="inventory-section inventory-shelf">
       <h2>📦 素材置き場</h2>
-      <p className="inventory-hint">ひっぱって釜に入れて使おう。作ったものは「陳列」で販売棚へ移せる。</p>
+      <p className="inventory-hint">ひっぱるかダブルクリック（タップ）で釜に入ります。<br />作ったものは「陳列」で販売棚へ移せます。</p>
 
       <div className="inventory-basic-section inventory-shelf-row">
-        <h3 className="inventory-subtitle">基本素材</h3>
+        <h3 className="inventory-subtitle">ざいりょうバッグ</h3>
         <div className="inventory-shelf-surface">
           <div className="inventory-grid">
             {BASIC_MATERIALS.map((id) => {
@@ -72,6 +97,8 @@ export function InventoryPanel() {
                   className="inventory-item-wrapper"
                   draggable
                   onDragStart={(e) => handleDragStartBasic(e, id)}
+                  onDoubleClick={() => dispatchQuickAddToCauldron({ basicMaterialId: id })}
+                  onTouchEnd={(e) => handleDoubleTap(e, `basic:${id}`, () => dispatchQuickAddToCauldron({ basicMaterialId: id }))}
                 >
                   <ItemCard item={{ id, name: meta?.name ?? id, icon: meta?.icon ?? '📦', tier: 0, flavor: meta?.flavor }} draggable />
                 </div>
@@ -92,6 +119,8 @@ export function InventoryPanel() {
                   className="inventory-item-wrapper"
                   draggable
                   onDragStart={(e) => handleDragStartInventory(e, item.instanceId)}
+                  onDoubleClick={() => dispatchQuickAddToCauldron({ instanceId: item.instanceId })}
+                  onTouchEnd={(e) => handleDoubleTap(e, `inv:${item.instanceId}`, () => dispatchQuickAddToCauldron({ instanceId: item.instanceId }))}
                 >
                   <ItemCard item={item} draggable />
                 </div>
@@ -119,7 +148,12 @@ export function InventoryPanel() {
                     onDragStart={(e) => handleDragStartInventory(e, group.firstInstanceId)}
                   >
                     <div className="stacked-item-card">
-                      <ItemCard item={item} value={getSellValue(item)} draggable />
+                      <div
+                        onDoubleClick={() => dispatchQuickAddToCauldron({ instanceId: group.firstInstanceId })}
+                        onTouchEnd={(e) => handleDoubleTap(e, `group:${group.key}`, () => dispatchQuickAddToCauldron({ instanceId: group.firstInstanceId }))}
+                      >
+                        <ItemCard item={item} value={getSellValue(item)} draggable />
+                      </div>
                       {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
                     </div>
                     <button type="button" className="stock-btn" onClick={() => stockOnShelf(group.firstInstanceId)}>
@@ -132,6 +166,14 @@ export function InventoryPanel() {
           </div>
         </div>
       </div>
+
+      {mobileCauldron && (
+        <div className="inventory-mobile-cauldron-slot inventory-shelf-row">
+          <div className="inventory-shelf-surface">
+            {mobileCauldron}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

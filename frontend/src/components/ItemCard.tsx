@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { InventoryItem, ItemCategory } from '../types'
 import { ITEMS_DB, getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
 import { ItemIconSvg } from './ItemIconSvg'
+import { formatG } from '../utils/format'
 
 export interface ItemDisplayMinimal {
   id: string
@@ -25,6 +26,14 @@ interface ItemCardProps {
   IconComponent?: React.ComponentType<{ itemId: string; className?: string }>
 }
 
+const TIER_LABELS: Record<number, string> = {
+  0: 'ざいりょう',
+  1: 'ふつう',
+  2: 'いいもの',
+  3: 'すごい',
+  4: 'でんせつ',
+}
+
 export function ItemCard({
   item,
   onClick,
@@ -40,6 +49,7 @@ export function ItemCard({
 
   const meta = ITEMS_DB[item.id] ?? { name: item.name, icon: item.icon, flavor: undefined }
   const tier = item.tier ?? meta.tier ?? 0
+  const tierLabel = TIER_LABELS[tier] ?? `すごさ${tier}`
   const category = item.category ?? meta.category ?? getItemCategory(item.id)
   const flavor = meta.flavor ?? ('flavor' in item ? item.flavor : undefined) ?? ('description' in item ? item.description : undefined)
   const IconRender = IconComponent ?? ItemIconSvg
@@ -71,12 +81,13 @@ export function ItemCard({
       role="tooltip"
     >
       <div className="item-card-popup-name">{meta.name}</div>
+      <div className="item-card-popup-value">すごさ: {tierLabel}</div>
       <div className="item-card-popup-value">カテゴリ: {ITEM_CATEGORY_LABELS[category]}</div>
       {price != null && (
-        <div className="item-card-popup-price">ねだん: {price}G</div>
+        <div className="item-card-popup-price">ねだん: {formatG(price)}</div>
       )}
       {value != null && (
-        <div className="item-card-popup-value">{value}G</div>
+        <div className="item-card-popup-value">{formatG(value)}</div>
       )}
       {flavor && (
         <div className="item-card-popup-flavor">{flavor}</div>
@@ -100,12 +111,12 @@ export function ItemCard({
         </span>
         <span className="item-card-name">{meta.name}</span>
         {price != null && (
-          <span className="item-card-price">ねだん: {price}G</span>
+          <span className="item-card-price">ねだん: {formatG(price)}</span>
         )}
         {value != null && (
-          <span className="item-card-value">{value}G</span>
+          <span className="item-card-value">{formatG(value)}</span>
         )}
-        {tier > 0 && <span className="tier-badge">T{tier}</span>}
+        <span className="tier-badge">{tierLabel}</span>
       </div>
       {showPopup && createPortal(popupContent, document.body)}
     </>

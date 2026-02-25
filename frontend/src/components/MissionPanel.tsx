@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext'
 import { api } from '../api/client'
 import { ITEMS_DB } from '../constants/items'
 import { ItemCard } from './ItemCard'
+import { formatNumber } from '../utils/format'
 
 const hasApi = () => !!import.meta.env.VITE_GAS_URL
 
@@ -68,10 +69,12 @@ export function MissionPanel() {
             <div className="mission-header">
               <span className="mission-title">{m.title}</span>
               <span className="mission-reward">
-                +{m.actualRewardG ?? m.rewardG}G
+                +{formatNumber(m.actualRewardG ?? m.rewardG)}G
                 {m.completed && m.actualRewardG != null && m.actualRewardG !== m.rewardG && (
                   <span className={`mission-reward-diff ${m.actualRewardG > m.rewardG ? 'diff-up' : 'diff-down'}`}>
-                    {m.actualRewardG > m.rewardG ? ` (+${m.actualRewardG - m.rewardG}G)` : ` (${m.actualRewardG - m.rewardG}G)`}
+                    {m.actualRewardG > m.rewardG
+                      ? ` (+${formatNumber(m.actualRewardG - m.rewardG)}G)`
+                      : ` (-${formatNumber(Math.abs(m.actualRewardG - m.rewardG))}G)`}
                   </span>
                 )}
               </span>

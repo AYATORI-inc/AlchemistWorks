@@ -95,12 +95,15 @@ export interface SaveData {
   userName: string
   workshopName: string
   g: number
+  totalSalesG?: number
+  totalSalesCount?: number
   inventory: InventoryItem[]
   recipes: Recipe[]
   achievements: Achievement[]
   rank: number
   lastLoginDate: string
   alchemyCount: number
+  missionCompletedCount?: number
   dailySalesLedger?: DailySalesLedger
   discoveredSvgIcons?: Record<string, DiscoveredSvgIcon>
   discoveredItemNames?: Record<string, string>

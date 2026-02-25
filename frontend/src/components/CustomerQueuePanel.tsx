@@ -2,6 +2,9 @@
 import { useGame } from '../contexts/GameContext'
 import type { ItemCategory } from '../types'
 import { getItemCategory, getSellValue, ITEM_CATEGORY_LABELS } from '../constants/items'
+import { PipetCharacter } from './PipetCharacter'
+import { api } from '../api/client'
+import { formatG } from '../utils/format'
 
 type Temperament = 'impatient' | 'normal' | 'relaxed'
 
@@ -16,11 +19,22 @@ interface Customer {
   reason: string
 }
 
+interface PipetShopEvent {
+  id: string
+  kind: 'sale' | 'no-sale'
+  speech: string
+  customerComment: string
+  isCustomerCommentPending: boolean
+}
+
 const CATEGORIES: ItemCategory[] = ['food', 'weapon', 'medicine', 'gem']
 const WHOLESALE_RATE = 0.12
 const MAX_QUEUE = 8
 const ARRIVAL_INTERVAL_MS = 10000
 const CHECK_INTERVAL_MS = 500
+const PIPET_EVENT_INTERVAL_MS = 5000
+const PENDING_CUSTOMER_COMMENT_TEXT_SALE = 'お会計中……'
+const PENDING_CUSTOMER_COMMENT_TEXT_NO_SALE = 'お見送り中……'
 
 const TEMPERAMENT_LABEL: Record<Temperament, string> = {
   impatient: 'せっかち',
@@ -152,16 +166,93 @@ function createCustomer(): Customer {
   }
 }
 
-export function CustomerQueuePanel() {
+function generateCustomerComment(customer: Customer, category: ItemCategory, kind: 'sale' | 'no-sale', purchasedText?: string): string {
+  const categoryLabel = ITEM_CATEGORY_LABELS[category]
+  if (kind === 'sale') {
+    const variants = [
+      `${purchasedText ?? '品物'}、ちょうど探していた雰囲気でした。次も${categoryLabel}を見に来ます。`,
+      `品ぞろえが良くて助かりました。${categoryLabel}の棚、また期待しています。`,
+      `見つかってよかったです。工房のセンス、仲間にも伝えておきますね。`,
+    ]
+    return `${customer.name}: ${variants[Math.floor(Math.random() * variants.length)]}`
+  }
+
+  const variants = [
+    `${categoryLabel}を目当てに来たので、また棚をのぞきに来ます。`,
+    `今日は見つからなかったけど、次回の入荷を楽しみにしています。`,
+    `欲しい品はなかったですが、工房の雰囲気は良かったです。また来ます。`,
+  ]
+  return `${customer.name}: ${variants[Math.floor(Math.random() * variants.length)]}`
+}
+
+const hasApi = () => !!import.meta.env.VITE_GAS_URL
+
+interface CustomerQueuePanelProps {
+  embedded?: boolean
+  onShopOpenChange?: (isOpen: boolean) => void
+}
+
+export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: CustomerQueuePanelProps = {}) {
   const { saveData, setSaveData, addSalesLog } = useGame()
   const [queue, setQueue] = useState<Customer[]>([])
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [isOpen, setIsOpen] = useState(false)
+  const [pipetEvent, setPipetEvent] = useState<PipetShopEvent | null>(null)
 
   const displayedItems = useMemo(
     () => (saveData?.inventory ?? []).filter((item) => item.isDisplayed),
     [saveData?.inventory]
   )
+
+  const requestAiCustomerComment = async (
+    eventId: string,
+    customer: Customer,
+    category: ItemCategory,
+    kind: 'sale' | 'no-sale',
+    fallbackComment: string,
+    purchasedText?: string,
+    quantity?: number,
+    totalPriceG?: number,
+  ) => {
+    const finalizeCustomerComment = (commentText: string) => {
+      setPipetEvent((prev) => {
+        if (!prev || prev.id !== eventId) return prev
+        return {
+          ...prev,
+          customerComment: commentText,
+          isCustomerCommentPending: false,
+        }
+      })
+    }
+
+    if (!hasApi()) {
+      finalizeCustomerComment(fallbackComment)
+      return
+    }
+    try {
+      const res = await api.shop.comment({
+        userId: saveData?.userId,
+        workshopName: saveData?.workshopName,
+        customerName: customer.name,
+        categoryName: ITEM_CATEGORY_LABELS[category],
+        eventType: kind,
+        purchasedItemText: purchasedText,
+        quantity,
+        customerReason: customer.reason,
+        customerTemperament: TEMPERAMENT_LABEL[customer.temperament],
+        totalPriceG,
+        isWholesale: customer.isWholesale,
+      })
+      const comment = (res?.comment ?? '').trim()
+      if (!comment) {
+        finalizeCustomerComment(fallbackComment)
+        return
+      }
+      finalizeCustomerComment(`${customer.name}: ${comment}`)
+    } catch (_err) {
+      finalizeCustomerComment(fallbackComment)
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) return
@@ -184,6 +275,14 @@ export function CustomerQueuePanel() {
   }, [])
 
   useEffect(() => {
+    if (!pipetEvent || pipetEvent.isCustomerCommentPending) return
+    const timer = window.setTimeout(() => {
+      setPipetEvent(null)
+    }, PIPET_EVENT_INTERVAL_MS)
+    return () => window.clearTimeout(timer)
+  }, [pipetEvent])
+
+  useEffect(() => {
     setQueue((prev) => {
       const front = prev[0]
       if (!front || front.arrivedAt > 0) return prev
@@ -193,7 +292,7 @@ export function CustomerQueuePanel() {
 
   useEffect(() => {
     const front = queue[0]
-    if (!front || front.arrivedAt <= 0) return
+    if (!front || front.arrivedAt <= 0 || pipetEvent) return
 
     const matches = displayedItems.filter((item) => (item.category ?? getItemCategory(item.id)) === front.desiredCategory)
     if (matches.length > 0) {
@@ -208,6 +307,7 @@ export function CustomerQueuePanel() {
       const purchasedItemText = Array.from(purchasedItems.entries())
         .map(([name, count]) => (count > 1 ? `${name}×${count}` : name))
         .join('、')
+      const totalCount = targets.length
 
       setSaveData((prev) => {
         if (!prev) return prev
@@ -219,20 +319,40 @@ export function CustomerQueuePanel() {
       })
 
       setQueue((prev) => (isOpen ? [...prev.slice(1), createCustomer()] : prev.slice(1)))
-      const suffix = front.isWholesale ? `大口で${targets.length}個まとめ買い` : '1個購入'
+      const suffix = front.isWholesale ? `大口で${totalCount}個まとめ買い` : '1個購入'
       addSalesLog({
         category: front.desiredCategory,
         amountG: reward,
-        note: `${front.name}が${purchasedItemText}を${targets.length}個購入（${suffix}）`,
+        note: `${front.name}が${purchasedItemText}を${totalCount}個購入（${suffix}）`,
       })
+      const eventId = `sale-${Date.now()}`
+      const fallbackComment = generateCustomerComment(front, front.desiredCategory, 'sale', purchasedItemText)
+      setPipetEvent({
+        id: eventId,
+        kind: 'sale',
+        speech: `${purchasedItemText}を${totalCount}個お買い上げいただきました♪ 合計 ${formatG(reward)} です。`,
+        customerComment: PENDING_CUSTOMER_COMMENT_TEXT_SALE,
+        isCustomerCommentPending: true,
+      })
+      void requestAiCustomerComment(eventId, front, front.desiredCategory, 'sale', fallbackComment, purchasedItemText, totalCount, reward)
       return
     }
 
     const elapsed = nowMs - front.arrivedAt
     if (elapsed >= front.patienceMs) {
       setQueue((prev) => (isOpen ? [...prev.slice(1), createCustomer()] : prev.slice(1)))
+      const eventId = `nosale-${Date.now()}`
+      const fallbackComment = generateCustomerComment(front, front.desiredCategory, 'no-sale')
+      setPipetEvent({
+        id: eventId,
+        kind: 'no-sale',
+        speech: `${ITEM_CATEGORY_LABELS[front.desiredCategory]}の商品が足りてないみたいです💦`,
+        customerComment: PENDING_CUSTOMER_COMMENT_TEXT_NO_SALE,
+        isCustomerCommentPending: true,
+      })
+      void requestAiCustomerComment(eventId, front, front.desiredCategory, 'no-sale', fallbackComment)
     }
-  }, [queue, displayedItems, nowMs, setSaveData, isOpen, addSalesLog])
+  }, [queue, displayedItems, nowMs, setSaveData, isOpen, addSalesLog, pipetEvent, saveData?.userId, saveData?.workshopName])
 
   const front = queue[0]
   const handleToggleShop = () => {
@@ -240,13 +360,15 @@ export function CustomerQueuePanel() {
       const next = !prev
       if (!next) {
         setQueue([])
+        setPipetEvent(null)
       }
+      onShopOpenChange?.(next)
       return next
     })
   }
 
   return (
-    <section className="customer-queue-panel sidebar-section">
+    <section className={`customer-queue-panel sidebar-section ${embedded ? 'embedded-shop-block' : ''}`.trim()}>
       <div className="shop-header-row">
         <h2>🏠 お店の中</h2>
         <button
@@ -257,9 +379,21 @@ export function CustomerQueuePanel() {
           {isOpen ? '店をしめる' : '店をあける'}
         </button>
       </div>
-      <p className="market-hint">客は自動で棚を確認。閉店中は新しい客は来ない。</p>
+      <p className="market-hint">お客さんは自動で棚を確認。<br />閉店中は新しいお客さんは来ません。</p>
 
-      {front && (
+      {!isOpen && (
+        <div className="shop-closed-pipet-card">
+          <PipetCharacter
+            className="pipet-shop-closed"
+            imageClassName="pipet-shop-full-image"
+            bubbleClassName="pipet-shop-bubble"
+            message="閉店中です。開店したら、お客様のご案内をはじめますね"
+            subMessage="棚を整えてから『店をあける』を押してね"
+          />
+        </div>
+      )}
+
+      {isOpen && front && (
         <div className="front-customer-card">
           <div className="front-line-1">
             <span className={`customer-name category-text-${front.desiredCategory}`}>
@@ -273,16 +407,45 @@ export function CustomerQueuePanel() {
         </div>
       )}
 
-      <ul className="customer-queue-list">
-        {queue.slice(1).map((customer) => (
-          <li key={customer.id} className="customer-row">
-            <span className={`customer-name category-text-${customer.desiredCategory}`}>
-              {customer.name}（{ITEM_CATEGORY_LABELS[customer.desiredCategory]}）
-            </span>
-            <span className={`temperament-badge temperament-${customer.temperament}`}>{TEMPERAMENT_LABEL[customer.temperament]}</span>
-          </li>
-        ))}
-      </ul>
+      {isOpen && (
+        <ul className="customer-queue-list">
+          {queue.slice(1).map((customer) => (
+            <li key={customer.id} className="customer-row">
+              <span className={`customer-name category-text-${customer.desiredCategory}`}>
+                {customer.name}（{ITEM_CATEGORY_LABELS[customer.desiredCategory]}）
+              </span>
+              <span className={`temperament-badge temperament-${customer.temperament}`}>{TEMPERAMENT_LABEL[customer.temperament]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {isOpen && pipetEvent && (
+        <div
+          className={`shop-event-modal-backdrop ${embedded ? 'embedded' : ''}`.trim()}
+          role="dialog"
+          aria-modal={embedded ? undefined : 'true'}
+          aria-live="polite"
+          aria-label={pipetEvent.kind === 'sale' ? '売却イベント' : 'お客様退店イベント'}
+        >
+          <div className={`shop-event-modal-card ${pipetEvent.kind}`}>
+            <div className="shop-event-modal-header">
+              <span className={`shop-event-kind-badge ${pipetEvent.kind}`}>
+                {pipetEvent.kind === 'sale' ? 'ご購入' : 'お帰り'}
+              </span>
+              <span className="shop-event-wait-text">次のお客様のご案内まで少し間を置きます…</span>
+            </div>
+            <PipetCharacter
+              className="pipet-shop-event"
+              imageClassName="pipet-shop-full-image"
+              bubbleClassName={`pipet-shop-bubble ${pipetEvent.kind === 'sale' ? 'success' : 'warn'}`}
+              message={pipetEvent.speech}
+            />
+            <p className="pipet-customer-comment-label">お客様の反応</p>
+            <p key={pipetEvent.id} className="pipet-customer-comment">{pipetEvent.customerComment}</p>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -4,7 +4,6 @@ import { GameModals } from './components/GameModals'
 import { StartPage } from './pages/StartPage'
 import { LoginPage } from './pages/LoginPage'
 import { MainPage } from './pages/MainPage'
-import { AchievementPage } from './pages/AchievementPage'
 
 function App() {
   return (
@@ -19,7 +18,7 @@ function App() {
           <Route path="/market" element={<Navigate to="/game#market" replace />} />
           <Route path="/recipes" element={<Navigate to="/game?open=recipes" replace />} />
           <Route path="/missions" element={<Navigate to="/game#missions" replace />} />
-          <Route path="/achievements" element={<AchievementPage />} />
+          <Route path="/achievements" element={<Navigate to="/game?open=achievements" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

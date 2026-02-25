@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGame } from '../contexts/GameContext'
 import { ItemCard } from './ItemCard'
 import { TipsDisplay } from './TipsDisplay'
@@ -29,6 +29,11 @@ const isGeneratedProduct = (item: InventoryItem) => {
   return tier >= 1
 }
 
+type CauldronQuickAddDetail = {
+  instanceId?: string
+  basicMaterialId?: string
+}
+
 export function Cauldron() {
   const { saveData, addToInventory, removeFromInventory, addRecipe, addDiscoveredSvgIcon } = useGame()
   const [cauldronItems, setCauldronItems] = useState<InventoryItem[]>([])
@@ -38,11 +43,11 @@ export function Cauldron() {
   const [showTips, setShowTips] = useState(false)
   const [productionCount, setProductionCount] = useState(1)
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
+  const addItemToCauldron = (payload: CauldronQuickAddDetail) => {
+    if (isProcessing) return
     if (cauldronItems.length >= 2) return
-    const instanceId = e.dataTransfer.getData('instanceId')
-    const basicMaterialId = e.dataTransfer.getData('basicMaterialId')
+
+    const { instanceId, basicMaterialId } = payload
     if (basicMaterialId && BASIC_MATERIALS.includes(basicMaterialId as typeof BASIC_MATERIALS[number])) {
       const meta = ITEMS_DB[basicMaterialId]
       const virtualItem: InventoryItem = {
@@ -52,12 +57,35 @@ export function Cauldron() {
         icon: meta?.icon ?? '📦',
         tier: 0,
       }
-      setCauldronItems((prev) => [...prev, virtualItem])
-    } else if (instanceId) {
+      setCauldronItems((prev) => (prev.length >= 2 ? prev : [...prev, virtualItem]))
+      return
+    }
+
+    if (instanceId) {
       const item = saveData?.inventory.find((i) => i.instanceId === instanceId)
-      if (item && !item.isDisplayed) setCauldronItems((prev) => [...prev, item])
+      if (item && !item.isDisplayed) {
+        setCauldronItems((prev) => (prev.length >= 2 ? prev : [...prev, item]))
+      }
     }
   }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    addItemToCauldron({
+      instanceId: e.dataTransfer.getData('instanceId') || undefined,
+      basicMaterialId: e.dataTransfer.getData('basicMaterialId') || undefined,
+    })
+  }
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<CauldronQuickAddDetail>
+      if (!customEvent?.detail) return
+      addItemToCauldron(customEvent.detail)
+    }
+    window.addEventListener('alchemy:add-to-cauldron', handler as EventListener)
+    return () => window.removeEventListener('alchemy:add-to-cauldron', handler as EventListener)
+  }, [addItemToCauldron])
 
   const produceItems = (base: Omit<InventoryItem, 'instanceId'>, count: number) => {
     for (let i = 0; i < count; i += 1) {
@@ -260,39 +288,62 @@ export function Cauldron() {
   return (
     <section className="cauldron-section">
       <h2>🔥 調合の釜</h2>
-      <div
-        className={`cauldron-dropzone ${cauldronItems.length > 0 ? 'has-items' : ''}`}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-      >
-        {isProcessing && showTips ? (
-          <TipsDisplay duration={TIPS_DURATION[pace]} tips={TIPS} />
-        ) : cauldronItems.length > 0 ? (
-          <div className="cauldron-items">
-            {cauldronItems.map((item) => (
-              <ItemCard key={item.instanceId} item={item} />
-            ))}
-            <button className="clear-btn" onClick={clearCauldron} type="button">
+      <div className="cauldron-workbench">
+        <div
+          className={`cauldron-illustration-wrap cauldron-drop-target ${cauldronItems.length > 0 ? 'has-items' : ''}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          aria-label="錬金釜ドロップエリア"
+        >
+          <img src="/images/Flask.png" alt="" className="cauldron-illustration" />
+          <span className="cauldron-drop-target-label">釜にドロップ</span>
+        </div>
+        <div className="cauldron-contents-panel">
+          <div className="cauldron-contents-header">
+            <p className="cauldron-contents-title">釜の中身</p>
+            <button
+              className="cauldron-secondary-btn cauldron-empty-btn"
+              onClick={clearCauldron}
+              type="button"
+              disabled={isProcessing || cauldronItems.length === 0}
+            >
               取り出す
             </button>
           </div>
-        ) : (
-          <span className="placeholder">素材置き場からひっぱって、ここに入れてね</span>
-        )}
+          <div
+            className={`cauldron-dropzone ${cauldronItems.length > 0 ? 'has-items' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+          >
+            {isProcessing && showTips ? (
+              <TipsDisplay duration={TIPS_DURATION[pace]} tips={TIPS} />
+            ) : cauldronItems.length > 0 ? (
+              <div className="cauldron-items">
+                {cauldronItems.map((item) => (
+                  <ItemCard key={item.instanceId} item={item} />
+                ))}
+              </div>
+            ) : (
+              <span className="placeholder">素材置き場から、素材をひっぱって釜に入れてね</span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="production-controls">
-        <span>生産個数</span>
+        <span className="production-controls-label">生産個数</span>
         <button
           type="button"
+          className="cauldron-step-btn"
           onClick={() => setProductionCount((prev) => Math.max(MIN_PRODUCTION_COUNT, prev - 1))}
           disabled={isProcessing || productionCount <= MIN_PRODUCTION_COUNT}
         >
           -
         </button>
-        <strong>{productionCount}</strong>
+        <strong className="production-count-value">{productionCount}</strong>
         <button
           type="button"
+          className="cauldron-step-btn"
           onClick={() => setProductionCount((prev) => Math.min(MAX_PRODUCTION_COUNT, prev + 1))}
           disabled={isProcessing || productionCount >= MAX_PRODUCTION_COUNT}
         >
@@ -300,17 +351,26 @@ export function Cauldron() {
         </button>
         <button
           type="button"
-          className="bulk-btn"
-          onClick={() => setProductionCount(10)}
-          disabled={isProcessing}
+          className="cauldron-secondary-btn bulk-btn"
+          onClick={() => setProductionCount((prev) => Math.min(MAX_PRODUCTION_COUNT, prev + 10))}
+          disabled={isProcessing || productionCount >= MAX_PRODUCTION_COUNT}
         >
-          大量生産(10)
+          +10
+        </button>
+        <button
+          type="button"
+          className="cauldron-secondary-btn count-reset-btn"
+          onClick={() => setProductionCount(MIN_PRODUCTION_COUNT)}
+          disabled={isProcessing || productionCount === MIN_PRODUCTION_COUNT}
+        >
+          個数クリア
         </button>
       </div>
 
-      <div className="pace-selector">
+      <div className="pace-selector" aria-label="調合ペース">
+        <span className="production-controls-label">調合ペース</span>
         {PACE_OPTIONS.map((opt) => (
-          <label key={opt.value}>
+          <label key={opt.value} className={`pace-option ${pace === opt.value ? 'is-selected' : ''}`}>
             <input
               type="radio"
               name="pace"
@@ -319,7 +379,7 @@ export function Cauldron() {
               onChange={() => setPace(opt.value)}
               disabled={isProcessing}
             />
-            {opt.label}
+            <span>{opt.label}</span>
           </label>
         ))}
       </div>

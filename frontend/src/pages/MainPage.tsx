@@ -5,6 +5,7 @@ import { Cauldron } from '../components/Cauldron'
 import { InventoryPanel } from '../components/InventoryPanel'
 import { DisplayShelfPanel } from '../components/DisplayShelfPanel'
 import { CustomerQueuePanel } from '../components/CustomerQueuePanel'
+import { PipetCharacter } from '../components/PipetCharacter'
 import { useGame } from '../contexts/GameContext'
 import { api } from '../api/client'
 import { resolveItemCategory } from '../constants/items'
@@ -14,8 +15,14 @@ const hasApi = () => !!import.meta.env.VITE_GAS_URL
 export function MainPage() {
   const navigate = useNavigate()
   const { hash, search } = useLocation()
-  const { saveData, setSaveData, setIsLoading, isLoading, setRecipeModalOpen } = useGame()
+  const { saveData, setSaveData, setIsLoading, isLoading, setRecipeModalOpen, setAchievementModalOpen } = useGame()
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [initialWorkshopLoadDone, setInitialWorkshopLoadDone] = useState(!hasApi())
+  const [isShopOpen, setIsShopOpen] = useState(false)
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(max-width: 900px)').matches
+  })
 
   useEffect(() => {
     if (!saveData?.userId) {
@@ -63,7 +70,10 @@ export function MainPage() {
         })
       })
       .catch(() => {})
-      .finally(() => setIsLoading(false))
+      .finally(() => {
+        setIsLoading(false)
+        setInitialWorkshopLoadDone(true)
+      })
   }, [saveData?.userId, setSaveData, setIsLoading])
 
   useEffect(() => {
@@ -87,6 +97,15 @@ export function MainPage() {
   }, [saveData])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(max-width: 900px)')
+    const update = () => setIsMobileLayout(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
     const id = hash.slice(1)
     if (id) {
       const el = document.getElementById(id)
@@ -99,13 +118,25 @@ export function MainPage() {
       setRecipeModalOpen(true)
       navigate('/game' + hash, { replace: true })
     }
-  }, [search, hash, navigate, setRecipeModalOpen])
+    if (search.includes('open=achievements')) {
+      setAchievementModalOpen(true)
+      navigate('/game' + hash, { replace: true })
+    }
+  }, [search, hash, navigate, setRecipeModalOpen, setAchievementModalOpen])
+
+  const showPipetWorkshopLoading = isLoading && !initialWorkshopLoadDone
 
   return (
     <div className="main-layout">
-      {isLoading && (
-        <div className="loading-overlay">
-          <span>工房のデータを読んでいるよ…</span>
+      {showPipetWorkshopLoading && (
+        <div className="loading-overlay pipet-loading-overlay" role="status" aria-live="polite">
+          <PipetCharacter
+            className="pipet-loading-card"
+            imageClassName="pipet-loading-image"
+            bubbleClassName="pipet-loading-bubble"
+            message={`${saveData?.workshopName || '工房'}の準備をしています、少しお待ちください`}
+            subMessage="棚とお客様の案内を整えています…"
+          />
         </div>
       )}
       {saveError && (
@@ -116,10 +147,23 @@ export function MainPage() {
       <Header />
       <div className="game-wrapper">
         <main className="main-content">
-          <InventoryPanel />
-          <Cauldron />
-          <CustomerQueuePanel />
-          <DisplayShelfPanel />
+          <InventoryPanel mobileCauldron={isMobileLayout ? <Cauldron /> : null} />
+          <section className="shop-interior-panel" aria-label="お店の中と商品棚">
+            <div className="shop-interior-decor" aria-hidden>
+              <span className="shop-decor-lantern left">🏮</span>
+              <span className={`shop-decor-sign ${isShopOpen ? 'is-open' : 'is-closed'}`}>
+                {isShopOpen ? 'OPEN' : 'CLOSED'}
+              </span>
+              <span className="shop-decor-lantern right">🏮</span>
+            </div>
+            <div className="shop-interior-window" aria-hidden />
+            <div className="shop-interior-counterline" aria-hidden />
+            <div className="shop-interior-grid">
+              <CustomerQueuePanel embedded onShopOpenChange={setIsShopOpen} />
+              {!isMobileLayout && <Cauldron />}
+              <DisplayShelfPanel embedded />
+            </div>
+          </section>
         </main>
       </div>
     </div>
