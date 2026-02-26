@@ -38,6 +38,14 @@ function RecipeCard({
   const resultName = recipe.resultName ?? getItemDisplay(recipe.result).name
   const resultIcon = recipe.resultIcon ?? getItemDisplay(recipe.result).icon
   const resultFlavor = recipe.resultFlavor ?? getItemDisplay(recipe.result).flavor
+  const resultCategory =
+    recipe.resultCategory ??
+    resolveItemCategory({
+      id: recipe.result,
+      name: recipe.resultName,
+      description: recipe.resultFlavor,
+      ingredientIds: recipe.ingredients,
+    })
   const ing1 = recipe.ingredientNames?.[0] ?? getItemDisplay(recipe.ingredients[0]).name
   const ing2 = recipe.ingredientNames?.[1] ?? getItemDisplay(recipe.ingredients[1]).name
   const flavor1 = recipe.ingredientFlavors?.[0] ?? getItemDisplay(recipe.ingredients[0]).flavor
@@ -63,6 +71,7 @@ function RecipeCard({
               icon: resultIcon,
               tier: recipe.resultTier ?? ITEMS_DB[recipe.result]?.tier ?? 0,
               flavor: resultFlavor,
+              category: resultCategory,
             }}
           />
         </div>
@@ -72,9 +81,9 @@ function RecipeCard({
             className="recipe-quick-craft-btn"
             disabled={!canQuickCraft || isCrafting}
             onClick={onQuickCraft}
-            title={canQuickCraft ? 'パッと調合する' : (quickCraftHint ?? '素材不足')}
+            title={canQuickCraft ? 'パッと錬金する' : (quickCraftHint ?? '素材不足')}
           >
-            {isCrafting ? '調合中…' : 'パッと調合する'}
+            {isCrafting ? '錬金中…' : 'パッと錬金する'}
           </button>
           {!canQuickCraft && quickCraftHint && (
             <p className="recipe-quick-craft-hint">{quickCraftHint}</p>
@@ -283,7 +292,7 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
           return
         }
         if (!res.success || !r) {
-          setQuickCraftMessage('調合がうまくいかなかった')
+          setQuickCraftMessage('錬金がうまくいかなかった')
           return
         }
 
@@ -320,7 +329,7 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
           resultCategory: resolvedCategory,
           ingredientNames: [ingAName, ingBName],
         })
-        setQuickCraftMessage(`レシピから調合したよ！ ${r.name} を1個作成`)
+        setQuickCraftMessage(`レシピから錬金したよ！ ${r.name} を1個作成`)
       } else {
         const resultId = recipe.result
         const meta = ITEMS_DB[resultId]
@@ -346,10 +355,10 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
           category: resultCategory,
         }, 1)
         addRecipe({ ...recipe, useCount: 1, resultCategory })
-        setQuickCraftMessage(`レシピから調合したよ！ ${resultName} を1個作成`)
+        setQuickCraftMessage(`レシピから錬金したよ！ ${resultName} を1個作成`)
       }
     } catch {
-      setQuickCraftMessage('レシピ調合に失敗しました')
+      setQuickCraftMessage('レシピ錬金に失敗しました')
     } finally {
       setQuickCraftingRecipeId(null)
     }
@@ -422,7 +431,7 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
           <div className="recipe-empty-state">
             <p>まだレシピを1つも見つけていない</p>
             <p className="recipe-empty-hint">
-              釜に素材を2つ入れて調合すると、新しいレシピが見つかるよ
+              釜に素材を2つ入れて錬金すると、新しいレシピが見つかるよ
             </p>
             <button type="button" className="recipe-empty-link-btn" onClick={onClose}>
               閉じる

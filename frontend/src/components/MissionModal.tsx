@@ -151,7 +151,7 @@ export function MissionModal({ onClose }: MissionModalProps) {
                   ) : (
                     <p className="mission-hint">
                       {hasApi()
-                        ? '作ったものがありません。まず釜で調合しよう。'
+                        ? '作ったものがありません。まず釜で錬金しよう。'
                         : '持っているものを選んで届ける（APIをつなぐと使えます）'}
                     </p>
                   )}

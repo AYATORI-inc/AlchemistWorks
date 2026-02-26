@@ -59,7 +59,7 @@ export function LoginPage() {
 
   const pipetSpeech = isNewGame
     ? 'はじめまして♪ あなたのお名前と工房名を教えてください！'
-    : 'おかえりなさい♪ 確認のため、お名前と工房名を教えてください！'
+    : 'おかえりなさい♪ お名前と工房名を確認させてください！'
   const pipetSubSpeech = userName.trim() || workshopName.trim()
     ? `確認中: ${userName.trim() || '（お名前）'} / ${workshopName.trim() || '（工房名）'}`
     : '入力してもらえたら、すぐに工房へ案内するよ'
@@ -194,7 +194,13 @@ export function LoginPage() {
               <h1>{isNewGame ? '工房をひらこう' : '工房にもどろう'}</h1>
               <p className="login-lead">
                 {isNewGame
-                  ? '名前と工房の名前をきめると、ホムンクルスのピペットが工房へ案内してくれます。'
+                  ? (
+                    <>
+                      名前と工房の名前をきめると、
+                      <br />
+                      ホムンクルスのピペットが工房へ案内してくれます。
+                    </>
+                  )
                   : '名前と工房名を入れて、いつもの工房にもどります。'}
               </p>
               <PipetCharacter

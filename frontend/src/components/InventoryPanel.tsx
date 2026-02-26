@@ -83,7 +83,12 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
   return (
     <section className="inventory-section inventory-shelf">
       <h2>📦 素材置き場</h2>
-      <p className="inventory-hint">ひっぱるかダブルクリック（タップ）で釜に入ります。<br />作ったものは「陳列」で販売棚へ移せます。</p>
+      <p className="inventory-hint">
+        <span className="inventory-hint-desktop">ひっぱるかダブルクリックで釜に入ります。</span>
+        <span className="inventory-hint-mobile">ひっぱるかダブルタップで釜に入ります。</span>
+        <br />
+        作ったものは「店に出す」で商品だなへ移せます。
+      </p>
 
       <div className="inventory-basic-section inventory-shelf-row">
         <h3 className="inventory-subtitle">ざいりょうバッグ</h3>
@@ -135,7 +140,7 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
         <div className="inventory-shelf-surface">
           <div className="inventory-grid">
             {generatedItems.length === 0 ? (
-              <p className="empty-message">まだ何も作っていない。釜で2つの素材を合わせて作ってみよう。</p>
+              <p className="empty-message">まだ何も作っていない。<br />釜で2つの素材を錬金してみよう。</p>
             ) : (
               groupedGeneratedItems.map((group) => {
                 const item = group.representative
@@ -157,7 +162,7 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
                       {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
                     </div>
                     <button type="button" className="stock-btn" onClick={() => stockOnShelf(group.firstInstanceId)}>
-                      陳列 ({ITEM_CATEGORY_LABELS[category]})
+                      店に出す ({ITEM_CATEGORY_LABELS[category]})
                     </button>
                   </div>
                 )

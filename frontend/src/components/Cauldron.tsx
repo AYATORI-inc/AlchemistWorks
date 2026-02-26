@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../contexts/GameContext'
 import { ItemCard } from './ItemCard'
 import { TipsDisplay } from './TipsDisplay'
@@ -42,6 +42,8 @@ export function Cauldron() {
   const [message, setMessage] = useState('')
   const [showTips, setShowTips] = useState(false)
   const [productionCount, setProductionCount] = useState(1)
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const prevCauldronItemCountRef = useRef(0)
 
   const addItemToCauldron = (payload: CauldronQuickAddDetail) => {
     if (isProcessing) return
@@ -51,7 +53,7 @@ export function Cauldron() {
     if (basicMaterialId && BASIC_MATERIALS.includes(basicMaterialId as typeof BASIC_MATERIALS[number])) {
       const meta = ITEMS_DB[basicMaterialId]
       const virtualItem: InventoryItem = {
-        instanceId: `basic_${basicMaterialId}`,
+        instanceId: `basic_${basicMaterialId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         id: basicMaterialId,
         name: meta?.name ?? basicMaterialId,
         icon: meta?.icon ?? '📦',
@@ -87,6 +89,28 @@ export function Cauldron() {
     return () => window.removeEventListener('alchemy:add-to-cauldron', handler as EventListener)
   }, [addItemToCauldron])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const prevCount = prevCauldronItemCountRef.current
+    prevCauldronItemCountRef.current = cauldronItems.length
+
+    if (cauldronItems.length !== 2 || prevCount >= 2) return
+    if (!window.matchMedia('(max-width: 900px)').matches) return
+
+    const targetEl = sectionRef.current
+    if (!targetEl) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const headerHeight = document.querySelector<HTMLElement>('.header')?.offsetHeight ?? 0
+    const top = Math.max(0, window.scrollY + targetEl.getBoundingClientRect().top - headerHeight - 12)
+
+    window.scrollTo({
+      top,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    })
+  }, [cauldronItems.length])
+
   const produceItems = (base: Omit<InventoryItem, 'instanceId'>, count: number) => {
     for (let i = 0; i < count; i += 1) {
       addToInventory({
@@ -98,7 +122,7 @@ export function Cauldron() {
 
   const handleMix = async () => {
     if (cauldronItems.length !== 2 || !saveData?.userId) {
-      setMessage('釜に材料を2つ入れてから、調合しようね')
+      setMessage('釜に材料を2つ入れてから、錬金しようね')
       return
     }
     setIsProcessing(true)
@@ -235,11 +259,11 @@ export function Cauldron() {
           const isNewRecipe = !hadRecipeBefore && !!r.isNewRecipe
           setMessage(
             isNewRecipe
-              ? `できた！${r.name}を${productionCount}個作成。新しいレシピを見つけた！`
+              ? `できた！${r.name}を${productionCount}個作成。\n新しいレシピを見つけた！`
               : `できた！${r.name}を${productionCount}個作成。`
           )
         } else {
-          setMessage('調合がうまくいかなかった')
+          setMessage('錬金がうまくいかなかった')
         }
       } else {
         const duration = TIPS_DURATION[pace]
@@ -272,11 +296,11 @@ export function Cauldron() {
         setMessage(
           hadRecipeBefore
             ? `できた！回復薬を${productionCount}個作成。`
-            : `できた！回復薬を${productionCount}個作成。新しいレシピを見つけた！`
+            : `できた！回復薬を${productionCount}個作成。\n新しいレシピを見つけた！`
         )
       }
     } catch {
-      setMessage('調合がうまくいかなかった')
+      setMessage('錬金がうまくいかなかった')
     }
     setCauldronItems([])
     setShowTips(false)
@@ -286,8 +310,8 @@ export function Cauldron() {
   const clearCauldron = () => setCauldronItems([])
 
   return (
-    <section className="cauldron-section">
-      <h2>🔥 調合の釜</h2>
+    <section ref={sectionRef} className="cauldron-section">
+      <h2>🔥 錬金の釜</h2>
       <div className="cauldron-workbench">
         <div
           className={`cauldron-illustration-wrap cauldron-drop-target ${cauldronItems.length > 0 ? 'has-items' : ''}`}
@@ -296,7 +320,7 @@ export function Cauldron() {
           aria-label="錬金釜ドロップエリア"
         >
           <img src="/images/Flask.png" alt="" className="cauldron-illustration" />
-          <span className="cauldron-drop-target-label">釜にドロップ</span>
+          <span className="cauldron-drop-target-label">釜に入れる</span>
         </div>
         <div className="cauldron-contents-panel">
           <div className="cauldron-contents-header">
@@ -352,10 +376,18 @@ export function Cauldron() {
         <button
           type="button"
           className="cauldron-secondary-btn bulk-btn"
-          onClick={() => setProductionCount((prev) => Math.min(MAX_PRODUCTION_COUNT, prev + 10))}
+          onClick={() => setProductionCount((prev) => Math.max(MIN_PRODUCTION_COUNT, prev - 5))}
+          disabled={isProcessing || productionCount <= MIN_PRODUCTION_COUNT}
+        >
+          -5
+        </button>
+        <button
+          type="button"
+          className="cauldron-secondary-btn bulk-btn"
+          onClick={() => setProductionCount((prev) => Math.min(MAX_PRODUCTION_COUNT, prev + 5))}
           disabled={isProcessing || productionCount >= MAX_PRODUCTION_COUNT}
         >
-          +10
+          +5
         </button>
         <button
           type="button"
@@ -367,8 +399,8 @@ export function Cauldron() {
         </button>
       </div>
 
-      <div className="pace-selector" aria-label="調合ペース">
-        <span className="production-controls-label">調合ペース</span>
+      <div className="pace-selector" aria-label="錬金ペース">
+        <span className="production-controls-label">錬金ペース</span>
         {PACE_OPTIONS.map((opt) => (
           <label key={opt.value} className={`pace-option ${pace === opt.value ? 'is-selected' : ''}`}>
             <input
@@ -389,7 +421,7 @@ export function Cauldron() {
         onClick={handleMix}
         disabled={isProcessing || cauldronItems.length !== 2}
       >
-        調合する
+        錬金する
       </button>
       {message && <p className="message-area">{message}</p>}
     </section>

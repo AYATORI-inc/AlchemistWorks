@@ -14,7 +14,7 @@ var BASIC_ITEMS = [
   { itemId: 'fire_stone', name: '火の石', icon: '🔥', price: 1200, flavor: 'わずかに炎を宿した石。' },
   { itemId: 'magic_sand', name: '魔法の砂', icon: '✨', price: 1000, flavor: 'きらめく魔力を帯びた砂。' },
   { itemId: 'feather', name: '羽根', icon: '🪶', price: 700, flavor: '軽く、風を呼ぶ。' },
-  { itemId: 'iron_ore', name: '鉄鉱石', icon: '🪨', price: 1500, flavor: '鍛錬すれば鉄になる鉱石。' },
+  { itemId: 'iron_ore', name: '粗末な武具', icon: '🗡️', price: 1500, flavor: '使い古された武具。分解すれば素材になる。' },
   { itemId: 'dark_dust', name: '闇の粉', icon: '🌑', price: 1200, flavor: '闇を凝縮した粉。' },
   { itemId: 'elec_stone', name: '電気石', icon: '⚡', price: 1400, flavor: '触れるとびりりとする石。' }
 ];

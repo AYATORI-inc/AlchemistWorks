@@ -49,7 +49,9 @@ export function AchievementModal({ onClose }: AchievementModalProps) {
             ×
           </button>
         </div>
-        <div className="achievement-certificate-seal" aria-hidden>工房</div>
+        <div className="achievement-certificate-seal" aria-hidden>
+          <img src="/images/Seal.png" alt="" className="achievement-certificate-seal-image" />
+        </div>
 
         <section className="achievement-section">
           <h3>いまのランク</h3>
@@ -70,7 +72,7 @@ export function AchievementModal({ onClose }: AchievementModalProps) {
                   />
                 </div>
                 <p className="achievement-progress-footnote">
-                  5個解放ごとに称号アップ（{rankProgress.currentStepCount}/{rankProgress.requiredForNext}）
+                  6個解放ごとに称号アップ（{rankProgress.currentStepCount}/{rankProgress.requiredForNext}）
                 </p>
               </>
             ) : (

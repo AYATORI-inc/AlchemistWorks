@@ -14,7 +14,7 @@ export function TipsDisplay({ tips, duration }: TipsDisplayProps) {
   const [tip, setTip] = useState<Tip>(() => getRandomTip(tips))
 
   useEffect(() => {
-    const interval = Math.min(2000, duration / 2)
+    const interval = Math.max(2500, duration)
     const id = setInterval(() => {
       setTip(getRandomTip(tips))
     }, interval)

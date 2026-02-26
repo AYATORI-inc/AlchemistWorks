@@ -82,10 +82,10 @@ export function RecipeBookPage() {
           <div className="recipe-empty-state">
             <p>まだレシピを発見していない</p>
             <p className="recipe-empty-hint">
-              錬金釜で素材を2つ調合すると、新レシピが発見される
+              錬金釜で素材を2つ錬金すると、新レシピが発見される
             </p>
             <Link to="/game" className="recipe-empty-link">
-              工房に戻って調合する →
+              工房に戻って錬金する →
             </Link>
           </div>
         ) : (

@@ -106,12 +106,12 @@ export function resolveItemCategory(input: {
 
 export const ITEMS_DB: Record<string, { name: string; icon: string; tier?: number; flavor?: string; category?: ItemCategory }> = {
   herb: { name: '薬草', icon: '🌿', tier: 0, flavor: 'けがの手当に使える。どこにでもある。' },
-  water: { name: '水', icon: '💧', tier: 0, flavor: 'きれいな水。調合の基本。' },
+  water: { name: '水', icon: '💧', tier: 0, flavor: 'きれいな水。錬金の基本。' },
   slime: { name: 'なぞの肉', icon: '🥩', tier: 0, flavor: '正体不明だが、うまみが濃い赤い肉。' },
   fire_stone: { name: '火の石', icon: '🔥', tier: 0, flavor: 'ちょっと火がついている石。' },
   magic_sand: { name: '魔法の粉', icon: '✨', tier: 0, flavor: 'ひかるふしぎな粉。' },
   feather: { name: '羽根', icon: '🪶', tier: 0, flavor: '軽い。風がよく通る。' },
-  iron_ore: { name: '鉄鉱石', icon: '⛓️', tier: 0, flavor: 'かたい石と鉄のまざり。' },
+  iron_ore: { name: '粗末な武具', icon: '🗡️', tier: 0, flavor: '使い古された武具。素材として再利用できる。' },
   dark_dust: { name: '闇のかけら', icon: '🌫️', tier: 0, flavor: '暗い気配をまとった欠片。' },
   elec_stone: { name: '電気石', icon: '⚡', tier: 0, flavor: 'さわるとびりっとする石。' },
   potion: { name: '回復薬', icon: '🍷', tier: 1, flavor: 'けがをなおす薬。' },

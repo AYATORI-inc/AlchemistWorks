@@ -9,11 +9,20 @@ export function StartPage() {
         <div className="start-page-wood">
           <div className="start-page-paper">
             <p className="start-kicker">ALCHEMIST GUILD WORKSHOP</p>
-            <h1>🧪 魔法工房　ヒミツのお店</h1>
+            <h1 className="start-title">
+              <img src="/images/Seal.png" alt="" className="brand-seal-icon start-title-seal" aria-hidden />
+              <span>
+                <ruby className="brand-title-ruby">
+                  錬金工房
+                  <rt>れんきんこうぼう</rt>
+                </ruby>
+                &emsp;ヒミツのお店
+              </span>
+            </h1>
             <p className="subtitle">工房で国いちばんの錬金術師をめざそう</p>
             <div className="start-feature-row" aria-hidden>
-              <span>🔥 調合</span>
-              <span>🏪 おみせ</span>
+              <span>🔥 錬金</span>
+              <span>🏠 おみせ</span>
               <span>🏅 コレクション</span>
             </div>
             <div className="start-buttons">

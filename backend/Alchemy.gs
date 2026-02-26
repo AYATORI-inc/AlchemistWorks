@@ -8,7 +8,7 @@
 // 既知IDのフォールバック（フロントから name が渡されない場合用）
 var _INGREDIENT_NAMES = {
   herb: '薬草', water: '水', slime: 'なぞの肉', fire_stone: '火の石',
-  magic_sand: '魔法の砂', feather: '羽根', iron_ore: '鉄鉱石',
+  magic_sand: '魔法の砂', feather: '羽根', iron_ore: '粗末な武具',
   dark_dust: '闇の粉', elec_stone: '電気石',
   potion: '回復薬', poison: '毒薬', bomb: '爆弾', steam: '蒸気',
   glass: 'ガラス', jewel: '宝石', holy_water: '聖水', wing: '翼',
