@@ -14,6 +14,12 @@ export function Header() {
   const [goldValueSpark, setGoldValueSpark] = useState<{ key: number; dir: 'up' | 'down' } | null>(null)
   const lastSeenSalesEntryIdRef = useRef<string | null>(null)
   const prevGoldRef = useRef<number | null>(null)
+  const recipeLastSeenAtMs = saveData?.recipeBookLastSeenAt
+    ? new Date(saveData.recipeBookLastSeenAt).getTime()
+    : 0
+  const hasNewRecipes = (saveData?.recipes ?? []).some(
+    (recipe) => !!recipe.discoveredAt && new Date(recipe.discoveredAt).getTime() > recipeLastSeenAtMs
+  )
 
   const handleRecipeClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -93,7 +99,10 @@ export function Header() {
           </span>
         </Link>
         <nav className="header-nav">
-          <Link to="/game" onClick={handleRecipeClick}>レシピブック</Link>
+          <Link to="/game" onClick={handleRecipeClick}>
+            {hasNewRecipes && <span className="header-new-badge">NEW!!</span>}
+            レシピブック
+          </Link>
           <Link to="/achievements" onClick={handleAchievementClick}>実績</Link>
           <button type="button" className="header-nav-btn" onClick={handleLogout}>
             ログアウト

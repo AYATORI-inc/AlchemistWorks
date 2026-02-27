@@ -107,6 +107,7 @@ export interface SaveData {
   dailySalesLedger?: DailySalesLedger
   discoveredSvgIcons?: Record<string, DiscoveredSvgIcon>
   discoveredItemNames?: Record<string, string>
+  recipeBookLastSeenAt?: string
 }
 
 export interface AlchemyResult {

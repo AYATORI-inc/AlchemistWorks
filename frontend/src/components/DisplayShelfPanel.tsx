@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useGame } from '../contexts/GameContext'
 import type { ItemCategory } from '../types'
 import { ItemCard } from './ItemCard'
-import { getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
+import { getItemCategory, ITEM_CATEGORY_LABELS, ITEMS_DB } from '../constants/items'
 
 const CATEGORY_ORDER: ItemCategory[] = ['food', 'weapon', 'medicine', 'gem']
 
@@ -58,6 +58,25 @@ export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps =
     })
   }
 
+  const handleDropToShelf = (e: React.DragEvent) => {
+    e.preventDefault()
+    const instanceId = e.dataTransfer.getData('instanceId')
+    if (!instanceId) return
+    setSaveData((prev) => {
+      if (!prev) return prev
+      const target = prev.inventory.find((item) => item.instanceId === instanceId)
+      if (!target || target.isDisplayed) return prev
+      const tier = target.tier ?? ITEMS_DB[target.id]?.tier ?? 0
+      if (tier < 1) return prev
+      return {
+        ...prev,
+        inventory: prev.inventory.map((item) =>
+          item.instanceId === instanceId ? { ...item, isDisplayed: true } : item
+        ),
+      }
+    })
+  }
+
   return (
     <section className={`display-shelf-panel sidebar-section ${embedded ? 'embedded-shop-block' : ''}`.trim()}>
       <div className="display-shelf-signboard" aria-hidden>
@@ -66,8 +85,7 @@ export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps =
         <span className="display-shelf-signboard-pin left">●</span>
         <span className="display-shelf-signboard-pin right">●</span>
       </div>
-      <p className="market-hint">お客さんには欲しいものがあって、それがないと帰ってしまいます。</p>
-
+      <p className="market-hint">「作ったもの」からここに商品をうごかしてください。<br />お客さんには欲しいものがあって、それがないと帰ってしまいます。</p>
       <div className="display-shelf-rack">
         <div className="display-shelf-rack-post left" aria-hidden />
         <div className="display-shelf-rack-post right" aria-hidden />
@@ -75,7 +93,11 @@ export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps =
         <div className="display-shelf-rack-trim middle" aria-hidden />
         <div className="display-shelf-rack-trim bottom" aria-hidden />
 
-        <div className="display-shelf-rack-content">
+        <div
+          className="display-shelf-rack-content"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropToShelf}
+        >
           <div className="shelf-category-stats">
             {CATEGORY_ORDER.map((category) => (
               <span key={category} className={`category-chip category-${category}`}>

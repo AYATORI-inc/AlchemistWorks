@@ -12,7 +12,7 @@ function getItemDisplay(id: string) {
   return item ? { name: item.name, icon: item.icon } : { name: id, icon: '❓' }
 }
 
-function RecipeCard({ recipe }: { recipe: Recipe }) {
+function RecipeCard({ recipe, isNew }: { recipe: Recipe; isNew: boolean }) {
   const resultName = recipe.resultName ?? getItemDisplay(recipe.result).name
   const resultIcon = recipe.resultIcon ?? getItemDisplay(recipe.result).icon
   const ing1 = recipe.ingredientNames?.[0] ?? getItemDisplay(recipe.ingredients[0]).name
@@ -29,6 +29,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
 
   return (
     <div className="recipe-card" data-recipe>
+      {isNew && <span className="recipe-new-badge">NEW!!</span>}
       <div className="recipe-result">
         <ItemCard
           item={{
@@ -63,6 +64,9 @@ export function RecipeBookPage() {
   }, [navigate, saveData])
 
   const recipes = saveData?.recipes ?? []
+  const lastSeenAtMs = saveData?.recipeBookLastSeenAt
+    ? new Date(saveData.recipeBookLastSeenAt).getTime()
+    : 0
   const sortedRecipes = [...recipes].sort((a, b) => {
     const dateA = a.discoveredAt ? new Date(a.discoveredAt).getTime() : 0
     const dateB = b.discoveredAt ? new Date(b.discoveredAt).getTime() : 0
@@ -91,7 +95,11 @@ export function RecipeBookPage() {
         ) : (
           <div className="recipe-list">
             {sortedRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                isNew={!!recipe.discoveredAt && new Date(recipe.discoveredAt).getTime() > lastSeenAtMs}
+              />
             ))}
           </div>
         )}

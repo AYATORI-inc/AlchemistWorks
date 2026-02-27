@@ -19,7 +19,7 @@ export function StartPage() {
                 &emsp;ヒミツのお店
               </span>
             </h1>
-            <p className="subtitle">工房で国いちばんの錬金術師をめざそう</p>
+            <p className="subtitle">工房で伝説の錬金術師をめざそう</p>
             <div className="start-feature-row" aria-hidden>
               <span>🔥 錬金</span>
               <span>🏠 おみせ</span>

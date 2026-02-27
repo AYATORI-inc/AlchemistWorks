@@ -24,12 +24,14 @@ interface RecipeCraftAvailability {
 
 function RecipeCard({
   recipe,
+  isNew,
   canQuickCraft,
   quickCraftHint,
   onQuickCraft,
   isCrafting,
 }: {
   recipe: Recipe
+  isNew: boolean
   canQuickCraft: boolean
   quickCraftHint?: string
   onQuickCraft: () => void
@@ -62,6 +64,7 @@ function RecipeCard({
 
   return (
     <div className="recipe-card" data-recipe>
+      {isNew && <span className="recipe-new-badge">NEW!!</span>}
       <div className="recipe-result">
         <div className="recipe-result-card-wrap">
           <ItemCard
@@ -127,6 +130,9 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
   const [quickCraftingRecipeId, setQuickCraftingRecipeId] = useState<string | null>(null)
   const [quickCraftMessage, setQuickCraftMessage] = useState<string>('')
   const recipes = saveData?.recipes ?? []
+  const lastSeenAtMs = saveData?.recipeBookLastSeenAt
+    ? new Date(saveData.recipeBookLastSeenAt).getTime()
+    : 0
   const sortedRecipes = [...recipes].sort((a, b) => {
     const dateA = a.discoveredAt ? new Date(a.discoveredAt).getTime() : 0
     const dateB = b.discoveredAt ? new Date(b.discoveredAt).getTime() : 0
@@ -440,16 +446,17 @@ export function RecipeBookModal({ onClose }: RecipeBookModalProps) {
         ) : (
           <>
             <div className="recipe-list recipe-list-grid3">
-              {paginatedRecipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  canQuickCraft={recipeAvailability.get(recipe.id)?.canCraft ?? false}
-                  quickCraftHint={recipeAvailability.get(recipe.id)?.missingText}
-                  onQuickCraft={() => void handleQuickCraft(recipe)}
-                  isCrafting={quickCraftingRecipeId === recipe.id}
-                />
-              ))}
+            {paginatedRecipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                isNew={!!recipe.discoveredAt && new Date(recipe.discoveredAt).getTime() > lastSeenAtMs}
+                canQuickCraft={recipeAvailability.get(recipe.id)?.canCraft ?? false}
+                quickCraftHint={recipeAvailability.get(recipe.id)?.missingText}
+                onQuickCraft={() => void handleQuickCraft(recipe)}
+                isCrafting={quickCraftingRecipeId === recipe.id}
+              />
+            ))}
             </div>
             {visibleRecipes.length === 0 && (
               <div className="recipe-empty-state recipe-filter-empty-state">

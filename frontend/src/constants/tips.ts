@@ -28,6 +28,7 @@ export const TIPS: Tip[] = [
   { category: 'system', text: 'ログアウト前の出納帳で、今日の売上と販売内容を確認できるよ' },
   { category: 'system', text: '実績を集めると称号（ランク）が上がっていくよ' },
   { category: 'system', text: '錬金・売上・陳列の数も実績の対象になるよ' },
+  { category: 'system', text: 'たまに低予算のお客さんが来るよ。1000G以下の商品もそろえておこう' },
   // 世界観
   { category: 'lore', text: '国でいちばんの錬金術師をめざそう' },
   { category: 'lore', text: 'きみだけのレシピを、この工房で見つけよう' },

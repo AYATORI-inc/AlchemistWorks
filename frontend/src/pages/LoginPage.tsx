@@ -9,13 +9,13 @@ import { PipetCharacter } from '../components/PipetCharacter'
 
 const hasApi = () => !!import.meta.env.VITE_GAS_URL
 
-function sanitizeProfileText(value: string) {
+function sanitizeProfileText(value: string, maxLength: number) {
   return value
     .replace(/[\u0000-\u001F\u007F]/g, '')
     .replace(/[<>]/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim()
-    .slice(0, 24)
+    .slice(0, maxLength)
 }
 
 function hasExistingProgress(data: Record<string, unknown>) {
@@ -63,6 +63,9 @@ export function LoginPage() {
   const pipetSubSpeech = userName.trim() || workshopName.trim()
     ? `確認中: ${userName.trim() || '（お名前）'} / ${workshopName.trim() || '（工房名）'}`
     : '入力してもらえたら、すぐに工房へ案内するよ'
+  const workshopPlaceholder = isNewGame && userName.trim()
+    ? `${userName.trim()}の工房`
+    : '例：あなたの工房'
 
   const loadContinueSave = async (sanitizedUserName: string, sanitizedWorkshopName: string) => {
     if (hasApi()) {
@@ -135,8 +138,8 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const sanitizedUserName = sanitizeProfileText(userName)
-    const sanitizedWorkshopName = sanitizeProfileText(workshopName)
+    const sanitizedUserName = sanitizeProfileText(userName, 10)
+    const sanitizedWorkshopName = sanitizeProfileText(workshopName, 20)
     setUserName(sanitizedUserName)
     setWorkshopName(sanitizedWorkshopName)
     if (!sanitizedUserName || !sanitizedWorkshopName) return
@@ -214,7 +217,7 @@ export function LoginPage() {
 
             <section className="login-form-panel" aria-label="名前と工房名の入力">
               <div className="login-form-panel-header">
-                <h2>工房の登録帳</h2>
+                <h2>工房の登録簿</h2>
                 <p>あとで続きから入るときも同じ名前を使うよ</p>
               </div>
               <form onSubmit={handleSubmit} className="login-form">
@@ -223,9 +226,9 @@ export function LoginPage() {
                   <input
                     type="text"
                     value={userName}
-                    onChange={(e) => setUserName(sanitizeProfileText(e.target.value))}
+                    onChange={(e) => setUserName(sanitizeProfileText(e.target.value, 10))}
                     placeholder="あなたの名前"
-                    maxLength={24}
+                    maxLength={10}
                     required
                   />
                 </label>
@@ -234,15 +237,15 @@ export function LoginPage() {
                   <input
                     type="text"
                     value={workshopName}
-                    onChange={(e) => setWorkshopName(sanitizeProfileText(e.target.value))}
-                    placeholder="例：ひだりの工房"
-                    maxLength={24}
+                    onChange={(e) => setWorkshopName(sanitizeProfileText(e.target.value, 20))}
+                    placeholder={workshopPlaceholder}
+                    maxLength={20}
                     required
                   />
                 </label>
                 {error && <p className="error-text">{error}</p>}
                 <button type="submit" disabled={isLoading}>
-                  {isLoading ? 'まっています…' : isNewGame ? '工房をひらく' : 'あそびにいく'}
+                  {isLoading ? 'じゅんび中です……' : isNewGame ? '工房をひらく' : 'あそびにいく'}
                 </button>
               </form>
               <Link to="/" className="back-link">← もどる</Link>

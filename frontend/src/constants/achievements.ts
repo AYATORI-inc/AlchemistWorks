@@ -4,14 +4,16 @@ import { ITEMS_DB } from './items'
 export const RANK_TITLES: Record<number, string> = {
   1: 'みならい錬金術師',
   2: 'かけだし錬金術師',
-  3: 'ウワサの錬金術師',
-  4: 'スゴウデ錬金術師',
-  5: '宮廷錬金術師',
-  6: '伝説の錬金術師',
+  3: 'アマチュア錬金術師',
+  4: 'ウワサの錬金術師',
+  5: 'スゴウデ錬金術師',
+  6: '宮廷錬金術師',
+  7: '伝説級錬金術師',
+  8: '究極の錬金術師',
 }
 
 export const RANK_UNLOCK_STEP = 6
-export const MAX_RANK = 6
+export const MAX_RANK = 8
 
 export function formatTierTextForUi(text: string) {
   return text
@@ -32,9 +34,11 @@ type MetricKey =
   | 'producedTier2Count'
   | 'producedTier3Count'
   | 'displayedCount'
+  | 'displayedUniqueCount'
   | 'inventoryCount'
   | 'recipeCategoryCount'
   | 'discoveredIconCount'
+  | 'masterAchievementCount'
 
 interface AchievementDefinition {
   id: string
@@ -98,7 +102,8 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   { id: 'inventory_30', name: '素材と商品の山', description: '在庫を30個以上持つ', metricKey: 'inventoryCount', target: 30, conditionLabel: '所持在庫 30個' },
   { id: 'category_2', name: '品ぞろえの工夫', description: 'レシピで2種類以上のカテゴリを作る', metricKey: 'recipeCategoryCount', target: 2, conditionLabel: '作成カテゴリ 2種' },
   { id: 'category_4', name: '何でも屋の工房', description: 'レシピで4種類のカテゴリを作る', metricKey: 'recipeCategoryCount', target: 4, conditionLabel: '作成カテゴリ 4種' },
-  { id: 'recipe_new_10', name: '個性ある作品たち', description: '新しいレシピを10種類集める', metricKey: 'recipeCount', target: 10, conditionLabel: '新しいレシピ 10種' },
+  { id: 'recipe_new_10', name: '個性ある作品たち', description: '商品棚に8種類以上並べる', metricKey: 'displayedUniqueCount', target: 8, conditionLabel: '陳列の種類数 8種' },
+  { id: 'alchemy_master', name: '錬金術マスター', description: 'これ以外の実績をすべて集める', metricKey: 'masterAchievementCount', target: 0, conditionLabel: '他の実績を全取得' },
 ]
 
 const RETIRED_ACHIEVEMENT_IDS = new Set(['mission_1', 'mission_5', 'mission_15', 'icon_5'])
@@ -109,6 +114,7 @@ function getMetrics(saveData: SaveData) {
   const inventory = saveData.inventory ?? []
   const recipes = saveData.recipes ?? []
   const displayedItems = inventory.filter((item) => item.isDisplayed)
+  const displayedUniqueCount = new Set(displayedItems.map((item) => item.name || item.id)).size
   const producedTierCounts = recipes.reduce(
     (acc, recipe) => {
       const tier = recipe.resultTier ?? ITEMS_DB[recipe.result]?.tier ?? 0
@@ -138,9 +144,11 @@ function getMetrics(saveData: SaveData) {
     producedTier2Count: producedTierCounts.t2,
     producedTier3Count: producedTierCounts.t3,
     displayedCount: displayedItems.length,
+    displayedUniqueCount,
     inventoryCount: inventory.length,
     recipeCategoryCount,
     discoveredIconCount: Object.keys(saveData.discoveredSvgIcons ?? {}).length,
+    masterAchievementCount: 0,
   }
 }
 
@@ -151,8 +159,11 @@ function getCurrentValue(metrics: ReturnType<typeof getMetrics>, key: MetricKey)
 export function getAchievementProgressList(saveData: SaveData): AchievementProgressItem[] {
   const metrics = getMetrics(saveData)
   const unlockedMap = new Map((saveData.achievements ?? []).map((a) => [a.id, a]))
+  const masterId = 'alchemy_master'
+  const definitions = ACHIEVEMENT_DEFINITIONS
+  const baseDefinitions = definitions.filter((def) => def.id !== masterId)
 
-  return ACHIEVEMENT_DEFINITIONS.map((def) => {
+  const baseProgress = baseDefinitions.map((def) => {
     const current = getCurrentValue(metrics, def.metricKey)
     const saved = unlockedMap.get(def.id)
     const unlocked = !!saved?.unlocked || current >= def.target
@@ -168,6 +179,28 @@ export function getAchievementProgressList(saveData: SaveData): AchievementProgr
       conditionLabel: def.conditionLabel,
     }
   })
+
+  const baseProgressMap = new Map(baseProgress.map((item) => [item.id, item]))
+  const masterDef = definitions.find((def) => def.id === masterId)
+  if (masterDef) {
+    const unlockedOtherCount = baseProgress.filter((item) => item.unlocked).length
+    const totalOtherCount = baseDefinitions.length
+    const saved = unlockedMap.get(masterId)
+    const unlocked = totalOtherCount > 0 ? unlockedOtherCount >= totalOtherCount : true
+    baseProgressMap.set(masterId, {
+      id: masterDef.id,
+      name: masterDef.name,
+      description: masterDef.description,
+      unlocked,
+      unlockedAt: saved?.unlockedAt,
+      current: unlockedOtherCount,
+      target: totalOtherCount,
+      progressRate: clamp01(totalOtherCount <= 0 ? 1 : unlockedOtherCount / totalOtherCount),
+      conditionLabel: masterDef.conditionLabel,
+    })
+  }
+
+  return definitions.map((def) => baseProgressMap.get(def.id)!).filter(Boolean)
 }
 
 export function getRankFromUnlockedCount(unlockedCount: number) {

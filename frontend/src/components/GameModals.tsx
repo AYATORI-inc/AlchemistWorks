@@ -15,11 +15,19 @@ export function GameModals() {
     setMissionModalOpen,
     achievementModalOpen,
     setAchievementModalOpen,
+    setSaveData,
   } = useGame()
   if (!saveData?.userId) return null
+  const handleCloseRecipeBook = () => {
+    setRecipeModalOpen(false)
+    setSaveData((prev) => {
+      if (!prev) return prev
+      return { ...prev, recipeBookLastSeenAt: new Date().toISOString() }
+    })
+  }
   return (
     <>
-      {recipeModalOpen && <RecipeBookModal onClose={() => setRecipeModalOpen(false)} />}
+      {recipeModalOpen && <RecipeBookModal onClose={handleCloseRecipeBook} />}
       {missionModalOpen && <MissionModal onClose={() => setMissionModalOpen(false)} />}
       {achievementModalOpen && <AchievementModal onClose={() => setAchievementModalOpen(false)} />}
       <AchievementToastStack />

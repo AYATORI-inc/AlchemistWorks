@@ -87,7 +87,9 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
         <span className="inventory-hint-desktop">ひっぱるかダブルクリックで釜に入ります。</span>
         <span className="inventory-hint-mobile">ひっぱるかダブルタップで釜に入ります。</span>
         <br />
-        作ったものは「店に出す」で商品だなへ移せます。
+        作ったものは新しい錬金のざいりょうに使うか、
+        <br />
+        または「商品だなへ」で商品だなへ移せます。
       </p>
 
       <div className="inventory-basic-section inventory-shelf-row">
@@ -105,7 +107,10 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
                   onDoubleClick={() => dispatchQuickAddToCauldron({ basicMaterialId: id })}
                   onTouchEnd={(e) => handleDoubleTap(e, `basic:${id}`, () => dispatchQuickAddToCauldron({ basicMaterialId: id }))}
                 >
-                  <ItemCard item={{ id, name: meta?.name ?? id, icon: meta?.icon ?? '📦', tier: 0, flavor: meta?.flavor }} draggable />
+                  <div className="stacked-item-card">
+                    <ItemCard item={{ id, name: meta?.name ?? id, icon: meta?.icon ?? '📦', tier: 0, flavor: meta?.flavor }} draggable />
+                    <span className="stack-count-badge">×∞</span>
+                  </div>
                 </div>
               )
             })}
@@ -162,7 +167,8 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
                       {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
                     </div>
                     <button type="button" className="stock-btn" onClick={() => stockOnShelf(group.firstInstanceId)}>
-                      店に出す ({ITEM_CATEGORY_LABELS[category]})
+                      <span className="stock-btn-line">商品だなへ</span>
+                      <span className="stock-btn-line">({ITEM_CATEGORY_LABELS[category]})</span>
                     </button>
                   </div>
                 )

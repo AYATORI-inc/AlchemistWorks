@@ -65,6 +65,7 @@ const defaultSaveData: SaveData = {
   dailySalesLedger: { date: todayStr(), totalG: 0, entries: [] },
   discoveredSvgIcons: {},
   discoveredItemNames: {},
+  recipeBookLastSeenAt: undefined,
 }
 
 const GameContext = createContext<GameContextValue | null>(null)

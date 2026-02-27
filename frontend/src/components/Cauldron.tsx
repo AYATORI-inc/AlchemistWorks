@@ -90,6 +90,17 @@ export function Cauldron() {
   }, [addItemToCauldron])
 
   useEffect(() => {
+    if (!saveData?.inventory) return
+    setCauldronItems((prev) =>
+      prev.filter((item) => {
+        if (item.instanceId.startsWith('basic_')) return true
+        const current = saveData.inventory.find((inv) => inv.instanceId === item.instanceId)
+        return !!current && !current.isDisplayed
+      })
+    )
+  }, [saveData?.inventory])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     const prevCount = prevCauldronItemCountRef.current
@@ -358,6 +369,14 @@ export function Cauldron() {
         <span className="production-controls-label">生産個数</span>
         <button
           type="button"
+          className="cauldron-secondary-btn bulk-btn"
+          onClick={() => setProductionCount((prev) => Math.max(MIN_PRODUCTION_COUNT, prev - 5))}
+          disabled={isProcessing || productionCount <= MIN_PRODUCTION_COUNT}
+        >
+          -5
+        </button>
+        <button
+          type="button"
           className="cauldron-step-btn"
           onClick={() => setProductionCount((prev) => Math.max(MIN_PRODUCTION_COUNT, prev - 1))}
           disabled={isProcessing || productionCount <= MIN_PRODUCTION_COUNT}
@@ -372,14 +391,6 @@ export function Cauldron() {
           disabled={isProcessing || productionCount >= MAX_PRODUCTION_COUNT}
         >
           +
-        </button>
-        <button
-          type="button"
-          className="cauldron-secondary-btn bulk-btn"
-          onClick={() => setProductionCount((prev) => Math.max(MIN_PRODUCTION_COUNT, prev - 5))}
-          disabled={isProcessing || productionCount <= MIN_PRODUCTION_COUNT}
-        >
-          -5
         </button>
         <button
           type="button"
@@ -417,7 +428,7 @@ export function Cauldron() {
       </div>
 
       <button
-        className="mix-btn"
+        className={`mix-btn ${cauldronItems.length === 2 && !isProcessing ? 'is-ready' : ''}`.trim()}
         onClick={handleMix}
         disabled={isProcessing || cauldronItems.length !== 2}
       >
