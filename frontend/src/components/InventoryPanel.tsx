@@ -84,8 +84,8 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
     <section className="inventory-section inventory-shelf">
       <h2>📦 素材置き場</h2>
       <p className="inventory-hint">
-        <span className="inventory-hint-desktop">ひっぱるかダブルクリックで釜に入ります。</span>
-        <span className="inventory-hint-mobile">ひっぱるかダブルタップで釜に入ります。</span>
+        <span className="inventory-hint-desktop">ひっぱるか2回クリックで釜に入ります。</span>
+        <span className="inventory-hint-mobile">ひっぱるか2回タップで釜に入ります。</span>
         <br />
         作ったものは新しい錬金のざいりょうに使うか、
         <br />
