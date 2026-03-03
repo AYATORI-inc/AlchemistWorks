@@ -206,6 +206,15 @@ function generateCustomerComment(customer: Customer, category: ItemCategory, kin
   return `${customer.name}: ${variants[Math.floor(Math.random() * variants.length)]}`
 }
 
+function ensureCustomerPrefix(customerName: string, rawComment: string): string {
+  const comment = rawComment.trim()
+  if (!comment) return `${customerName}:`
+  const escapedName = customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const duplicatedPrefix = new RegExp(`^${escapedName}\\s*[:：]\\s*`)
+  const body = comment.replace(duplicatedPrefix, '').trim()
+  return `${customerName}: ${body}`
+}
+
 const hasApi = () => !!import.meta.env.VITE_GAS_URL
 
 interface CustomerQueuePanelProps {
@@ -278,7 +287,7 @@ export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: Custo
         finalizeCustomerComment(fallbackComment)
         return
       }
-      finalizeCustomerComment(`${customer.name}: ${comment}`)
+      finalizeCustomerComment(ensureCustomerPrefix(customer.name, comment))
     } catch (_err) {
       finalizeCustomerComment(fallbackComment)
     }
