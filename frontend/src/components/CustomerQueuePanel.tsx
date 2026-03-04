@@ -44,7 +44,7 @@ const WHOLESALE_RATE = 0.04
 const BUDGET_CUSTOMER_MAX_ITEM_PRICE_G = 1000
 const MAX_QUEUE = 10
 const FIRST_ARRIVAL_DELAY_MS = 3500
-const ARRIVAL_INTERVAL_MS = 45000
+const ARRIVAL_INTERVAL_MS = 10000
 const CHECK_INTERVAL_MS = 500
 const PIPET_EVENT_INTERVAL_MS = 4000
 const PENDING_CUSTOMER_COMMENT_TEXT_SALE = 'お会計中……'
@@ -322,7 +322,7 @@ export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: Custo
         }
       })
 
-      setQueue((prev) => (isOpen ? [...prev.slice(1), createCustomer()] : prev.slice(1)))
+      setQueue((prev) => prev.slice(1))
       const suffix = front.isWholesale
         ? `大口で${totalCount}個まとめ買い`
         : front.type === 'budget'
@@ -353,7 +353,7 @@ export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: Custo
 
     const elapsed = nowMs - front.arrivedAt
     if (elapsed >= front.patienceMs) {
-      setQueue((prev) => (isOpen ? [...prev.slice(1), createCustomer()] : prev.slice(1)))
+      setQueue((prev) => prev.slice(1))
       const eventId = `nosale-${Date.now()}`
       const fallbackComment = generateCustomerComment(front, front.desiredCategory, 'no-sale')
       setPipetEvent({
@@ -454,6 +454,18 @@ export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: Custo
             bubbleClassName="pipet-shop-bubble"
             message="閉店中です。開店したら、お客様のご案内をはじめますね"
             subMessage="商品だなに商品をそろえてから『店をあける』を押してね"
+          />
+        </div>
+      )}
+
+      {isOpen && !front && !pipetEvent && (
+        <div className="shop-waiting-pipet-card">
+          <PipetCharacter
+            className="pipet-shop-waiting"
+            imageClassName="pipet-shop-full-image pipet-shop-waiting-image"
+            bubbleClassName="pipet-shop-bubble waiting"
+            message="お客様をお待ちしています♪"
+            subMessage="ピカピカになるように、お店をおそうじ中です"
           />
         </div>
       )}

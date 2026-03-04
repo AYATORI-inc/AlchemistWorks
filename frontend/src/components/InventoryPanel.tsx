@@ -1,7 +1,10 @@
-import { useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useGame } from '../contexts/GameContext'
 import { ItemCard } from './ItemCard'
 import { BASIC_MATERIALS, ITEMS_DB, getSellValue, getItemCategory, ITEM_CATEGORY_LABELS } from '../constants/items'
+
+const STOCK_LONG_PRESS_DELAY_MS = 320
+const STOCK_LONG_PRESS_INTERVAL_MS = 130
 
 interface InventoryPanelProps {
   mobileCauldron?: ReactNode
@@ -10,6 +13,9 @@ interface InventoryPanelProps {
 export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
   const { saveData, setSaveData } = useGame()
   const lastTapRef = useRef<{ key: string; time: number } | null>(null)
+  const stockLongPressDelayTimerRef = useRef<number | null>(null)
+  const stockLongPressIntervalRef = useRef<number | null>(null)
+  const suppressStockClickRef = useRef(false)
   const inventory = saveData?.inventory ?? []
   const generatedItems = inventory.filter((i) => {
     const tier = i.tier ?? ITEMS_DB[i.id]?.tier ?? 0
@@ -48,17 +54,56 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  const stockOnShelf = (instanceId: string) => {
+  const stockOnShelfByGroupKey = (groupKey: string) => {
     setSaveData((prev) => {
       if (!prev) return prev
+      const targetIndex = prev.inventory.findIndex((item) => !item.isDisplayed && (item.name || item.id) === groupKey)
+      if (targetIndex < 0) return prev
       return {
         ...prev,
-        inventory: prev.inventory.map((item) =>
-          item.instanceId === instanceId ? { ...item, isDisplayed: true } : item
+        inventory: prev.inventory.map((item, index) =>
+          index === targetIndex ? { ...item, isDisplayed: true } : item
         ),
       }
     })
   }
+
+  const clearStockLongPressTimers = () => {
+    if (stockLongPressDelayTimerRef.current != null) {
+      window.clearTimeout(stockLongPressDelayTimerRef.current)
+      stockLongPressDelayTimerRef.current = null
+    }
+    if (stockLongPressIntervalRef.current != null) {
+      window.clearInterval(stockLongPressIntervalRef.current)
+      stockLongPressIntervalRef.current = null
+    }
+  }
+
+  const handleStockButtonPointerDown = (e: React.PointerEvent, groupKey: string) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    clearStockLongPressTimers()
+    stockLongPressDelayTimerRef.current = window.setTimeout(() => {
+      suppressStockClickRef.current = true
+      stockOnShelfByGroupKey(groupKey)
+      stockLongPressIntervalRef.current = window.setInterval(() => {
+        stockOnShelfByGroupKey(groupKey)
+      }, STOCK_LONG_PRESS_INTERVAL_MS)
+    }, STOCK_LONG_PRESS_DELAY_MS)
+  }
+
+  const handleStockButtonPointerEnd = () => {
+    clearStockLongPressTimers()
+  }
+
+  const handleStockButtonClick = (groupKey: string) => {
+    if (suppressStockClickRef.current) {
+      suppressStockClickRef.current = false
+      return
+    }
+    stockOnShelfByGroupKey(groupKey)
+  }
+
+  useEffect(() => () => clearStockLongPressTimers(), [])
 
   const dispatchQuickAddToCauldron = (payload: { instanceId?: string; basicMaterialId?: string }) => {
     window.dispatchEvent(new CustomEvent('alchemy:add-to-cauldron', { detail: payload }))
@@ -89,7 +134,7 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
         <br />
         作ったものは新しい錬金のざいりょうに使うか、
         <br />
-        または「商品だなへ」で商品だなへ移せます。
+        または「商品だなへ」で商品だなへ移せます（長押しで連続移動）。
       </p>
 
       <div className="inventory-basic-section inventory-shelf-row">
@@ -166,7 +211,15 @@ export function InventoryPanel({ mobileCauldron }: InventoryPanelProps = {}) {
                       </div>
                       {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
                     </div>
-                    <button type="button" className="stock-btn" onClick={() => stockOnShelf(group.firstInstanceId)}>
+                    <button
+                      type="button"
+                      className="stock-btn"
+                      onPointerDown={(e) => handleStockButtonPointerDown(e, group.key)}
+                      onPointerUp={handleStockButtonPointerEnd}
+                      onPointerCancel={handleStockButtonPointerEnd}
+                      onPointerLeave={handleStockButtonPointerEnd}
+                      onClick={() => handleStockButtonClick(group.key)}
+                    >
                       <span className="stock-btn-line">商品だなへ</span>
                       <span className="stock-btn-line">({ITEM_CATEGORY_LABELS[category]})</span>
                     </button>

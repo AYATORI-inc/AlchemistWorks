@@ -2632,6 +2632,7 @@ body {
 }
 
 .shop-toast {
+  position: relative;
   padding: 8px 16px;
   border-radius: 999px;
   font-weight: 700;
@@ -2644,6 +2645,53 @@ body {
 .shop-toast.sale {
   background: linear-gradient(135deg, #2e7d32 0%, #3ea957 100%);
   color: #ffffff;
+}
+
+.shop-toast.sale::before,
+.shop-toast.sale::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.shop-toast.sale::before {
+  background:
+    #ffd93d;
+  box-shadow:
+    -56px -28px 0 #ffd93d,
+    -46px -40px 0 #ff6b6b,
+    -34px -22px 0 #4dabf7,
+    -24px -36px 0 #38d9a9,
+    -12px -26px 0 #f783ff,
+    -2px -40px 0 #ffd93d,
+    12px -24px 0 #ff922b,
+    24px -38px 0 #66d9e8,
+    36px -20px 0 #8ce99a,
+    50px -32px 0 #ff8787;
+  animation: shopSaleConfettiLeft 980ms cubic-bezier(0.22, 0.8, 0.2, 1) 80ms 1 both;
+}
+
+.shop-toast.sale::after {
+  background:
+    #fff3bf;
+  box-shadow:
+    -52px 12px 0 #38d9a9,
+    -40px 2px 0 #ff922b,
+    -26px 16px 0 #74c0fc,
+    -12px 6px 0 #f783ff,
+    4px 14px 0 #ffd93d,
+    18px 4px 0 #69db7c,
+    32px 18px 0 #ff8787,
+    46px 6px 0 #4dabf7,
+    60px 16px 0 #ffd43b,
+    70px 2px 0 #66d9e8;
+  animation: shopSaleConfettiRight 1020ms cubic-bezier(0.22, 0.8, 0.2, 1) 120ms 1 both;
 }
 
 .shop-toast.no-sale {
@@ -2667,6 +2715,34 @@ body {
   100% {
     opacity: 0;
     transform: translateY(-8px) scale(0.98);
+  }
+}
+
+@keyframes shopSaleConfettiLeft {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(-16deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - 30px), calc(-50% - 34px)) scale(1.12) rotate(34deg);
+  }
+}
+
+@keyframes shopSaleConfettiRight {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(14deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + 34px), calc(-50% - 30px)) scale(1.15) rotate(-32deg);
   }
 }
 
@@ -2974,12 +3050,50 @@ body {
   padding: 10px;
 }
 
+.shop-waiting-pipet-card {
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid #dbe4f0;
+  background:
+    radial-gradient(circle at 84% 18%, rgba(255, 244, 214, 0.78) 0%, rgba(255, 244, 214, 0) 38%),
+    linear-gradient(180deg, #f7fbff 0%, #edf5ff 100%);
+  padding: 10px;
+}
+
 .pipet-shop-full-image {
   width: 112px;
 }
 
 .pipet-shop-bubble {
   min-height: 84px;
+}
+
+.pipet-shop-bubble.waiting {
+  background: #f8fffb;
+  border-color: #9ed8b0;
+}
+
+.pipet-shop-waiting-image {
+  transform-origin: 50% 100%;
+  animation: pipetSideStep 1.8s ease-in-out infinite;
+}
+
+@keyframes pipetSideStep {
+  0% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
+  25% {
+    transform: translateX(8px) rotate(4deg);
+  }
+  50% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(8px) rotate(4deg);
+  }
+  100% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
 }
 
 .pipet-shop-bubble.success {

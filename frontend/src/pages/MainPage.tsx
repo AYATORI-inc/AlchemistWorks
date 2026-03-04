@@ -135,7 +135,7 @@ export function MainPage() {
             imageClassName="pipet-loading-image"
             bubbleClassName="pipet-loading-bubble"
             message={`${saveData?.workshopName || '工房'}の準備をしています、少しお待ちください`}
-            subMessage="棚とお客様の案内を整えています…"
+            subMessage="釜と商品だなのじゅんびを整えています…"
           />
         </div>
       )}

@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useGame } from '../contexts/GameContext'
 import type { ItemCategory } from '../types'
 import { ItemCard } from './ItemCard'
 import { getItemCategory, ITEM_CATEGORY_LABELS, ITEMS_DB } from '../constants/items'
 
 const CATEGORY_ORDER: ItemCategory[] = ['food', 'weapon', 'medicine', 'gem']
+const RETURN_LONG_PRESS_DELAY_MS = 320
+const RETURN_LONG_PRESS_INTERVAL_MS = 130
 
 interface DisplayShelfPanelProps {
   embedded?: boolean
@@ -12,6 +14,9 @@ interface DisplayShelfPanelProps {
 
 export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps = {}) {
   const { saveData, setSaveData } = useGame()
+  const returnLongPressDelayTimerRef = useRef<number | null>(null)
+  const returnLongPressIntervalRef = useRef<number | null>(null)
+  const suppressReturnClickRef = useRef(false)
   const displayedItems = (saveData?.inventory ?? []).filter((item) => item.isDisplayed)
   const groupedDisplayedItems = useMemo(() => {
     const grouped = new Map<string, { key: string; count: number; firstInstanceId: string; representative: typeof displayedItems[number] }>()
@@ -46,17 +51,56 @@ export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps =
     return initial
   }, [displayedItems])
 
-  const returnToInventory = (instanceId: string) => {
+  const returnToInventoryByGroupKey = (groupKey: string) => {
     setSaveData((prev) => {
       if (!prev) return prev
+      const targetIndex = prev.inventory.findIndex((item) => item.isDisplayed && (item.name || item.id) === groupKey)
+      if (targetIndex < 0) return prev
       return {
         ...prev,
-        inventory: prev.inventory.map((item) =>
-          item.instanceId === instanceId ? { ...item, isDisplayed: false } : item
+        inventory: prev.inventory.map((item, index) =>
+          index === targetIndex ? { ...item, isDisplayed: false } : item
         ),
       }
     })
   }
+
+  const clearReturnLongPressTimers = () => {
+    if (returnLongPressDelayTimerRef.current != null) {
+      window.clearTimeout(returnLongPressDelayTimerRef.current)
+      returnLongPressDelayTimerRef.current = null
+    }
+    if (returnLongPressIntervalRef.current != null) {
+      window.clearInterval(returnLongPressIntervalRef.current)
+      returnLongPressIntervalRef.current = null
+    }
+  }
+
+  const handleReturnButtonPointerDown = (e: React.PointerEvent, groupKey: string) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    clearReturnLongPressTimers()
+    returnLongPressDelayTimerRef.current = window.setTimeout(() => {
+      suppressReturnClickRef.current = true
+      returnToInventoryByGroupKey(groupKey)
+      returnLongPressIntervalRef.current = window.setInterval(() => {
+        returnToInventoryByGroupKey(groupKey)
+      }, RETURN_LONG_PRESS_INTERVAL_MS)
+    }, RETURN_LONG_PRESS_DELAY_MS)
+  }
+
+  const handleReturnButtonPointerEnd = () => {
+    clearReturnLongPressTimers()
+  }
+
+  const handleReturnButtonClick = (groupKey: string) => {
+    if (suppressReturnClickRef.current) {
+      suppressReturnClickRef.current = false
+      return
+    }
+    returnToInventoryByGroupKey(groupKey)
+  }
+
+  useEffect(() => () => clearReturnLongPressTimers(), [])
 
   const handleDropToShelf = (e: React.DragEvent) => {
     e.preventDefault()
@@ -117,7 +161,15 @@ export function DisplayShelfPanel({ embedded = false }: DisplayShelfPanelProps =
                     <ItemCard item={group.representative} value={group.representative.value} />
                     {group.count > 1 && <span className="stack-count-badge">×{group.count}</span>}
                   </div>
-                  <button type="button" className="market-sell-btn" onClick={() => returnToInventory(group.firstInstanceId)}>
+                  <button
+                    type="button"
+                    className="market-sell-btn"
+                    onPointerDown={(e) => handleReturnButtonPointerDown(e, group.key)}
+                    onPointerUp={handleReturnButtonPointerEnd}
+                    onPointerCancel={handleReturnButtonPointerEnd}
+                    onPointerLeave={handleReturnButtonPointerEnd}
+                    onClick={() => handleReturnButtonClick(group.key)}
+                  >
                     もどす
                   </button>
                 </div>
