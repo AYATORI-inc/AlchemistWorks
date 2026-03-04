@@ -17,7 +17,6 @@
  */
 
 function _shopFallbackComment(payload) {
-  var customerName = (payload.customerName || 'お客さん').toString();
   var categoryName = (payload.categoryName || 'このカテゴリ').toString();
   var purchasedItemText = (payload.purchasedItemText || '品物').toString();
   var qty = typeof payload.quantity === 'number' ? payload.quantity : 1;
@@ -29,7 +28,7 @@ function _shopFallbackComment(payload) {
       '想像より良い出来です。仲間にも勧めます。'
     ];
     var line = saleLines[Math.floor(Math.random() * saleLines.length)];
-    return customerName + ': ' + purchasedItemText + (qty > 1 ? 'を' + qty + '個、' : '、') + line;
+    return purchasedItemText + (qty > 1 ? 'を' + qty + '個、' : '、') + line;
   }
 
   var noSaleLines = [
@@ -37,7 +36,7 @@ function _shopFallbackComment(payload) {
     '今日は見つからなかったので、入荷を待っています。',
     '欲しいものはなかったですが、また立ち寄ります。'
   ];
-  return customerName + ': ' + noSaleLines[Math.floor(Math.random() * noSaleLines.length)];
+  return noSaleLines[Math.floor(Math.random() * noSaleLines.length)];
 }
 
 function _shopExtractJsonFromText(text) {

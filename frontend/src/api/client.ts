@@ -20,13 +20,15 @@ async function fetchApi<T>(path: string, options: FetchApiOptions = {}): Promise
       : `/api/${path}`
   const { body: bodyObj, ...restOptions } = options
   const bodyStr = bodyObj ? JSON.stringify(bodyObj) : undefined
+  const headers = new Headers(restOptions.headers || {})
+  if (bodyStr && !headers.has('Content-Type')) {
+    // GAS cross-origin calls must stay "simple request" to avoid OPTIONS preflight.
+    headers.set('Content-Type', 'text/plain;charset=utf-8')
+  }
   const res = await fetch(url, {
     ...restOptions,
     body: bodyStr,
-    headers: {
-      'Content-Type': 'application/json',
-      ...restOptions.headers,
-    },
+    headers,
   })
   if (!res.ok) throw new Error(`API Error: ${res.status} ${res.statusText}`)
   return res.json()

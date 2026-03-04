@@ -19,7 +19,7 @@ var Config = {
 
   /** OpenAI モデル（スクリプトプロパティ、未設定時は gpt-4o-mini） */
   getOpenAiModel: function() {
-    return PropertiesService.getScriptProperties().getProperty('OPENAI_MODEL') || 'gpt-4o';
+    return PropertiesService.getScriptProperties().getProperty('OPENAI_MODEL') || 'gpt-4o-mini';
   },
 
   /** Drive を使用するか（false で PropertiesService のみ） */
