@@ -5,15 +5,11 @@ import { api } from '../api/client'
 import { ITEMS_DB } from '../constants/items'
 import { ItemCard } from './ItemCard'
 import { formatNumber } from '../utils/format'
+import mockMissionsPanelJson from '../data/mock-missions-panel.json'
 
 const hasApi = () => !!import.meta.env.VITE_GAS_URL
 
-// モック（API未連携時用）
-const MOCK_MISSIONS: Mission[] = [
-  { id: 'm1', title: '癒しの薬', description: '傷を癒す薬を1個納品してほしい', rewardG: 3000, completed: false },
-  { id: 'm2', title: '町の祭り用', description: '祭り用の特別な炎を1個納品してほしい', rewardG: 5000, completed: false },
-  { id: 'm3', title: '新発見', description: '新しい回復系のアイテムを発見する', rewardG: 2500, completed: false },
-]
+const MOCK_MISSIONS = mockMissionsPanelJson as Mission[]
 
 export function MissionPanel() {
   const { saveData, missions: apiMissions, missionsSource, setMissions, setDeliveringMission, addG, removeFromInventory } = useGame()

@@ -8,6 +8,12 @@ import { ITEMS_DB } from '../constants/items'
 import { useGame } from '../contexts/GameContext'
 
 const VIEWBOX = '0 0 24 24'
+const ITEM_ID_ALIASES: Record<string, string> = {
+  slime: 'mysterious_meat',
+  mystery_meat: 'mysterious_meat',
+  iron_ore: 'crude_weapon',
+  shabby_gear: 'crude_weapon',
+}
 
 const SVG_ICONS: Record<string, ReactNode> = {
   // === 素材 tier 0 ===
@@ -25,7 +31,7 @@ const SVG_ICONS: Record<string, ReactNode> = {
       <path fill="#90caf9" d="M12 6c2 2.5 2 5 2 8 0 2.2-1.8 4-4 4s-4-1.8-4-4c0-3 .5-5.5 2-8h4z" opacity="0.6" />
     </g>
   ),
-  slime: (
+  mysterious_meat: (
     <g>
       <path fill="#8d3b2f" d="M4 14c0-4 4-8 9-8 4 0 7 2 7 6 0 5-4 8-9 8-4 0-7-2-7-6z" />
       <path fill="#b84c3e" d="M6 14c0-3 3-6 7-6 3 0 5 2 5 4 0 4-3 6-7 6-3 0-5-1-5-4z" />
@@ -59,7 +65,7 @@ const SVG_ICONS: Record<string, ReactNode> = {
       <path fill="#a1887f" d="M12 5l1 7-1 5h1l2-6z" />
     </g>
   ),
-  iron_ore: (
+  crude_weapon: (
     <g>
       <path fill="#546e7a" d="M5 9h14l-1 10H6L5 9z" />
       <path fill="#78909c" d="M6 10h12v2l-1 6H7l-1-6v-2z" />
@@ -272,7 +278,8 @@ interface ItemIconSvgProps {
 
 export function ItemIconSvg({ itemId, className, svgPath: inlinePath, svgFill: inlineFill, fallbackIcon: propFallback }: ItemIconSvgProps) {
   const { saveData } = useGame()
-  const svgContent = SVG_ICONS[itemId]
+  const normalizedItemId = ITEM_ID_ALIASES[itemId] ?? itemId
+  const svgContent = SVG_ICONS[normalizedItemId]
   const aiSvg = saveData?.discoveredSvgIcons?.[itemId]
   const fallbackIcon = propFallback ?? ITEMS_DB[itemId]?.icon ?? '❓'
 

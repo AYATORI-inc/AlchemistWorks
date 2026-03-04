@@ -10,11 +10,11 @@
 var BASIC_ITEMS = [
   { itemId: 'herb', name: '薬草', icon: '🌿', price: 500, flavor: '傷の手当に使える、どこにでもある草。' },
   { itemId: 'water', name: '水', icon: '💧', price: 300, flavor: '清らかな水。錬金の基本素材。' },
-  { itemId: 'slime', name: 'なぞの肉', icon: '🥩', price: 800, flavor: '正体不明だが、うまみが濃い赤い肉。' },
+  { itemId: 'mysterious_meat', name: 'なぞの肉', icon: '🥩', price: 800, flavor: '正体不明だが、うまみが濃い赤い肉。' },
   { itemId: 'fire_stone', name: '火の石', icon: '🔥', price: 1200, flavor: 'わずかに炎を宿した石。' },
   { itemId: 'magic_sand', name: '魔法の砂', icon: '✨', price: 1000, flavor: 'きらめく魔力を帯びた砂。' },
   { itemId: 'feather', name: '羽根', icon: '🪶', price: 700, flavor: '軽く、風を呼ぶ。' },
-  { itemId: 'iron_ore', name: '粗末な武具', icon: '🗡️', price: 1500, flavor: '使い古された武具。分解すれば素材になる。' },
+  { itemId: 'crude_weapon', name: '粗末な武具', icon: '🗡️', price: 1500, flavor: '使い古された武具。分解すれば素材になる。' },
   { itemId: 'dark_dust', name: '闇の粉', icon: '🌑', price: 1200, flavor: '闇を凝縮した粉。' },
   { itemId: 'elec_stone', name: '電気石', icon: '⚡', price: 1400, flavor: '触れるとびりりとする石。' }
 ];

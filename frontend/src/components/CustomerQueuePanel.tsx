@@ -6,6 +6,7 @@ import { getItemCategory, getSellValue, ITEM_CATEGORY_LABELS } from '../constant
 import { PipetCharacter } from './PipetCharacter'
 import { api } from '../api/client'
 import { formatG } from '../utils/format'
+import customersJson from '../data/customers.json'
 
 type Temperament = 'impatient' | 'normal' | 'relaxed'
 type CustomerType = 'normal' | 'budget' | 'wholesale'
@@ -45,7 +46,7 @@ const MAX_QUEUE = 10
 const FIRST_ARRIVAL_DELAY_MS = 3500
 const ARRIVAL_INTERVAL_MS = 45000
 const CHECK_INTERVAL_MS = 500
-const PIPET_EVENT_INTERVAL_MS = 5000
+const PIPET_EVENT_INTERVAL_MS = 4000
 const PENDING_CUSTOMER_COMMENT_TEXT_SALE = 'お会計中……'
 const PENDING_CUSTOMER_COMMENT_TEXT_NO_SALE = 'お見送り中……'
 
@@ -61,78 +62,14 @@ const TEMPERAMENT_PATIENCE_MS: Record<Temperament, number> = {
   relaxed: 60000,
 }
 
-const CATEGORY_REASONS: Record<ItemCategory, string[]> = {
-  food: [
-    '今日の晩ごはんに良さそうな品を探している',
-    '旅の保存食をまとめて持っていきたい',
-    '子どものおやつ用に安心な品がほしい',
-    '王都への長旅に耐える滋養食を探している',
-    '錬金釜で温め直せる保存料理を試したい',
-    '珍しい香辛料入りの新作料理素材を仕入れたい',
-  ],
-  weapon: [
-    '護衛依頼の前に装備を新調したい',
-    '採掘遠征に向けて丈夫な武具を見たい',
-    '訓練用に手頃な武器を買い足したい',
-    '魔獣討伐に備えて対属性武器を探している',
-    '古い家宝の剣を錬成強化できる素材がほしい',
-    '王国騎士団の規格に合う装備を確認したい',
-  ],
-  medicine: [
-    '体調を崩した仲間のために薬が必要',
-    '遠征前に回復薬を備蓄しておきたい',
-    '診療所への納入分を仕入れたい',
-    '呪いを和らげる中和薬を探している',
-    '徹夜続きでも効く覚醒ポーションを試したい',
-    '希少な霊草を使った上級薬の相談をしたい',
-  ],
-  gem: [
-    '工芸師から宝飾素材の指定が入った',
-    '儀式用に質の良い宝石を探している',
-    '贈り物用に目立つ石を選びたい',
-    '魔力を蓄積できる触媒石を探している',
-    '王家紋章に合う色味の宝玉を見繕いたい',
-    '欠けた魔導結晶の代替品を求めている',
-  ],
+const CUSTOMER_DATA = customersJson as {
+  titles: string[]
+  names: string[]
+  categoryReasons: Record<ItemCategory, string[]>
 }
-
-const CUSTOMER_TITLES = [
-  '宝石商',
-  '旅商人',
-  '薬師',
-  '鍛冶師',
-  '狩人',
-  '書記官',
-  '調査員',
-  '学者',
-  '魔導士',
-  '錬金術師見習い',
-  '王国騎士',
-  '冒険者',
-  '神殿司祭',
-  '宮廷料理人',
-  '採掘師',
-  '結界術師',
-]
-
-const CUSTOMER_NAMES = [
-  'アルバート',
-  'エマ',
-  'クララ',
-  'ノア',
-  'ミラ',
-  'ルーク',
-  'セシル',
-  'レオン',
-  'イザベラ',
-  'オリヴィア',
-  'フェリクス',
-  'アストラ',
-  'リオネル',
-  'カミラ',
-  'エドガー',
-  'ソフィア',
-]
+const CATEGORY_REASONS = CUSTOMER_DATA.categoryReasons
+const CUSTOMER_TITLES = CUSTOMER_DATA.titles
+const CUSTOMER_NAMES = CUSTOMER_DATA.names
 
 function randomCategory(): ItemCategory {
   return CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
@@ -279,6 +216,8 @@ export function CustomerQueuePanel({ embedded = false, onShopOpenChange }: Custo
         quantity,
         customerReason: customer.reason,
         customerTemperament: TEMPERAMENT_LABEL[customer.temperament],
+        customerType: customer.type,
+        maxItemPriceG: customer.maxItemPriceG,
         totalPriceG,
         isWholesale: customer.isWholesale,
       })

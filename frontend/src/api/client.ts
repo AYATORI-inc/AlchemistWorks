@@ -108,10 +108,12 @@ export const api = {
       quantity?: number
       customerReason?: string
       customerTemperament?: string
+      customerType?: 'normal' | 'budget' | 'wholesale'
+      maxItemPriceG?: number | null
       totalPriceG?: number
       isWholesale?: boolean
     }) =>
-      fetchApi<{ ok: boolean; source?: 'ai' | 'fallback'; comment: string }>('shop/comment', {
+      fetchApi<{ ok: boolean; source?: 'preset' | 'fallback' | 'ai'; comment: string }>('shop/comment', {
         method: 'POST',
         body: { path: 'shop/comment', ...payload },
       }),

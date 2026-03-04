@@ -6,9 +6,16 @@
  */
 
 // 既知IDのフォールバック（フロントから name が渡されない場合用）
+var _INGREDIENT_ID_ALIASES = {
+  slime: 'mysterious_meat',
+  mystery_meat: 'mysterious_meat',
+  iron_ore: 'crude_weapon',
+  shabby_gear: 'crude_weapon'
+};
+
 var _INGREDIENT_NAMES = {
-  herb: '薬草', water: '水', slime: 'なぞの肉', fire_stone: '火の石',
-  magic_sand: '魔法の砂', feather: '羽根', iron_ore: '粗末な武具',
+  herb: '薬草', water: '水', mysterious_meat: 'なぞの肉', fire_stone: '火の石',
+  magic_sand: '魔法の砂', feather: '羽根', crude_weapon: '粗末な武具',
   dark_dust: '闇の粉', elec_stone: '電気石',
   potion: '回復薬', poison: '毒薬', bomb: '爆弾', steam: '蒸気',
   glass: 'ガラス', jewel: '宝石', holy_water: '聖水', wing: '翼',
@@ -22,8 +29,8 @@ var _INGREDIENT_NAMES = {
 var _PACE_NAMES = { fast: '素早く', normal: '普通', slow: 'ゆっくり' };
 var _ITEM_CATEGORIES = ['food', 'weapon', 'medicine', 'gem'];
 var _INGREDIENT_CATEGORIES = {
-  herb: 'medicine', water: 'food', slime: 'food', fire_stone: 'gem',
-  magic_sand: 'medicine', feather: 'weapon', iron_ore: 'weapon',
+  herb: 'medicine', water: 'food', mysterious_meat: 'food', fire_stone: 'gem',
+  magic_sand: 'medicine', feather: 'weapon', crude_weapon: 'weapon',
   dark_dust: 'gem', elec_stone: 'weapon',
   potion: 'medicine', poison: 'medicine', bomb: 'weapon', steam: 'medicine',
   glass: 'gem', jewel: 'gem', holy_water: 'medicine', wing: 'gem',
@@ -39,6 +46,11 @@ var _CATEGORY_KEYWORDS = {
   medicine: ['medicine', 'potion', 'elixir', 'heal', 'cure', 'toxin', 'poison', '薬', '回復', '治療', '毒', '秘薬', '聖水'],
   gem: ['gem', 'jewel', 'crystal', 'stone', 'glass', 'ore', '宝', '石', '結晶', '鉱', '宝石', 'ガラス']
 };
+
+function _normalizeIngredientId(id) {
+  var raw = (id || '').toString();
+  return _INGREDIENT_ID_ALIASES[raw] || raw;
+}
 
 function _normalizeCategory(raw, fallback) {
   var category = (raw || '').toString();
@@ -58,7 +70,7 @@ function _inferCategoryFromText(text) {
 }
 
 function _inferCategoryFromIngredient(ingredient) {
-  var id = (ingredient && ingredient.id ? ingredient.id : '').toString();
+  var id = _normalizeIngredientId(ingredient && ingredient.id ? ingredient.id : '');
   if (_INGREDIENT_CATEGORIES[id]) return _INGREDIENT_CATEGORIES[id];
   var byName = _inferCategoryFromText(ingredient && ingredient.name ? ingredient.name : '');
   if (byName) return byName;
@@ -89,9 +101,10 @@ function _inferCategoryFromIngredients(ia, ib) {
 
 function _resolveIngredient(item) {
   if (item && typeof item === 'object' && item.name) {
-    return { id: String(item.id || ''), name: String(item.name).slice(0, 30) };
+    var objectId = _normalizeIngredientId(String(item.id || ''));
+    return { id: objectId, name: String(item.name).slice(0, 30) };
   }
-  var id = (item || '').toString();
+  var id = _normalizeIngredientId((item || '').toString());
   return { id: id, name: _INGREDIENT_NAMES[id] || id };
 }
 
@@ -119,7 +132,10 @@ function handleAlchemy(e) {
     for (var i = 0; i < knownRecipes.length; i++) {
       var r = knownRecipes[i];
       if (!r || !r.ingredients || r.ingredients.length !== 2) continue;
-      var rSorted = [String(r.ingredients[0] || ''), String(r.ingredients[1] || '')].sort();
+      var rSorted = [
+        _normalizeIngredientId(String(r.ingredients[0] || '')),
+        _normalizeIngredientId(String(r.ingredients[1] || ''))
+      ].sort();
       var rKey = rSorted[0] + '_' + rSorted[1];
       if (rKey !== ingKey) continue;
       var rPace = (r.pace || 'normal').toString();
